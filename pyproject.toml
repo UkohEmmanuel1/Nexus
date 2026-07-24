@@ -1,0 +1,65 @@
+[build-system]
+requires = ["setuptools>=68.0", "wheel"]
+build-backend = "setuptools.backends._legacy:_Backend"
+
+[project]
+name = "nexus"
+version = "0.1.0"
+description = "Open-source, scalable, production-ready Large Language Model"
+authors = [
+    { name = "Nexus contributors" }
+]
+license = { text = "MIT" }
+readme = "README.md"
+requires-python = ">=3.10"
+
+dependencies = [
+    "torch>=2.1.0",
+    "hydra-core>=1.3",
+    "omegaconf>=2.3",
+    "sentencepiece>=0.1.99",
+    "datasets>=2.14",
+    "transformers>=4.36",
+    "accelerate>=0.25",
+    "wandb>=0.16",
+    "tqdm>=4.66",
+    "numpy>=1.24",
+    "einops>=0.7",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=7.4",
+    "pytest-cov>=4.1",
+    "black>=23.12",
+    "ruff>=0.1",
+    "mypy>=1.7",
+    "pre-commit>=3.5",
+]
+deepspeed = ["deepspeed>=0.13"]
+finetune = ["peft>=0.7", "trl>=0.7", "bitsandbytes>=0.42"]
+inference = ["fastapi>=0.109", "uvicorn[standard]>=0.27", "pydantic>=2.5"]
+eval = ["evalplus>=0.1", "lm-eval>=0.4"]
+quant = ["torchao>=0.1"]
+all = ["nexus[dev,deepspeed,finetune,inference,eval,quant]"]
+
+[project.scripts]
+openllm = "src.inference.cli:main"
+openllm-train = "src.training.trainer:main"
+openllm-eval = "src.evaluation.runner:main"
+openllm-server = "src.inference.server:main"
+
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["src*"]
+
+[tool.ruff]
+line-length = 100
+target-version = "py310"
+
+[tool.ruff.lint]
+select = ["E", "F", "W", "I", "N", "UP"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+python_files = ["test_*.py"]

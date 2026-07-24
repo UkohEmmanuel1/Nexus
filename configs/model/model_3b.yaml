@@ -1,0 +1,23 @@
+model:
+  dim: 3200
+  n_layers: 26
+  n_heads: 32
+  n_kv_heads: 8
+  ffn_mult: 2.6667
+  vocab_size: 128000
+  max_seq_len: 4096
+  norm_eps: 1.0e-5
+  rope_theta: 10000.0
+  hidden_dropout: 0.0
+  attention_dropout: 0.0
+  moe:
+    enabled: true
+    num_experts: 8
+    top_k: 2
+    capacity_factor: 1.25
+    aux_loss_coef: 0.01
+    z_loss_coef: 0.001
+  init_std: 0.02
+  use_flash_attn: true
+  gradient_checkpointing: true
+  dtype: bfloat16

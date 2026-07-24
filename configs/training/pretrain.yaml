@@ -1,0 +1,55 @@
+defaults:
+  - model: model_3b
+  - override hydra/job_logging: colorlog
+  - override hydra/hydra_logging: colorlog
+
+training:
+  lr: 3.0e-4
+  min_lr: 3.0e-5
+  weight_decay: 0.1
+  beta1: 0.9
+  beta2: 0.95
+  eps: 1.0e-8
+  max_steps: 100000
+  warmup_steps: 1000
+  batch_size: 4
+  grad_accum_steps: 8
+  max_grad_norm: 1.0
+  dtype: bfloat16
+  log_interval: 10
+  save_interval: 1000
+  eval_interval: 500
+  output_dir: ./checkpoints/pretrain
+  wandb: false
+  wandb_project: nexus
+
+data:
+  max_seq_len: 4096
+  num_workers: 4
+  prefetch_factor: 2
+  datasets:
+    - name: fineweb
+      path: HuggingFaceFW/fineweb
+      subset: default
+      split: train
+      weight: 1.0
+    - name: slim_pajama
+      path: togethercomputer/RedPajama-Data-1T
+      split: train
+      weight: 0.3
+
+model:
+  use_flash_attn: true
+  gradient_checkpointing: true
+
+distributed:
+  backend: nccl
+  strategy: fsdp
+  fsdp:
+    sharding_strategy: FULL_SHARD
+    mixed_precision: true
+    cpu_offload: false
+  deepspeed:
+    zero_stage: 3
+    offload_optimizer: false
+    offload_params: false

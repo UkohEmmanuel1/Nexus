@@ -1,0 +1,59 @@
+version: "3.9"
+
+services:
+  api:
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile
+    ports:
+      - "8000:8000"
+    volumes:
+      - ../checkpoints:/app/checkpoints
+      - ../tokenizer:/app/tokenizer
+      - ../data:/app/data
+    environment:
+      - CUDA_VISIBLE_DEVICES=0
+      - OPENLLM_MODEL_PATH=/app/checkpoints/model.pt
+      - OPENLLM_TOKENIZER_PATH=/app/tokenizer/tokenizer.model
+    command: ["python", "-m", "src.inference.server"]
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: 1
+              capabilities: [gpu]
+
+  chat:
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile
+    ports:
+      - "8080:8080"
+    volumes:
+      - ../checkpoints:/app/checkpoints
+      - ../tokenizer:/app/tokenizer
+    environment:
+      - CUDA_VISIBLE_DEVICES=0
+    stdin_open: true
+    tty: true
+    command: ["python", "-m", "src.inference.cli", "--model", "/app/checkpoints/model.pt", "--tokenizer", "/app/tokenizer/tokenizer.model"]
+
+  # training:
+  #   build:
+  #     context: ..
+  #     dockerfile: docker/Dockerfile
+  #   volumes:
+  #     - ../checkpoints:/app/checkpoints
+  #     - ../data:/app/data
+  #   environment:
+  #     - CUDA_VISIBLE_DEVICES=0,1,2,3
+  #     - WORLD_SIZE=4
+  #   deploy:
+  #     resources:
+  #       reservations:
+  #         devices:
+  #           - driver: nvidia
+  #             count: 4
+  #             capabilities: [gpu]
+  #   command: ["torchrun", "--nproc_per_node=4", "-m", "src.training.trainer"]

@@ -1,0 +1,55 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: nexus-api
+  labels:
+    app: nexus
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: nexus
+  template:
+    metadata:
+      labels:
+        app: nexus
+    spec:
+      containers:
+      - name: api
+        image: nexus:latest
+        ports:
+        - containerPort: 8000
+        env:
+        - name: OPENLLM_MODEL_PATH
+          value: /models/model.pt
+        - name: OPENLLM_TOKENIZER_PATH
+          value: /models/tokenizer.model
+        volumeMounts:
+        - name: model-storage
+          mountPath: /models
+        resources:
+          requests:
+            memory: "16Gi"
+            cpu: "4"
+            nvidia.com/gpu: 1
+          limits:
+            memory: "64Gi"
+            cpu: "16"
+            nvidia.com/gpu: 1
+        command: ["python", "-m", "src.inference.server"]
+      volumes:
+      - name: model-storage
+        persistentVolumeClaim:
+          claimName: nexus-models
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: nexus-models
+spec:
+  accessModes:
+    - ReadOnlyMany
+  resources:
+    requests:
+      storage: 100Gi
+  storageClassName: standard

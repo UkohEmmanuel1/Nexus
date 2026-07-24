@@ -1,0 +1,25 @@
+defaults:
+  - model: model_3b
+  - override hydra/job_logging: colorlog
+
+training:
+  lr: 2.0e-5
+  weight_decay: 0.01
+  beta1: 0.9
+  beta2: 0.999
+  eps: 1.0e-8
+  max_steps: 5000
+  warmup_steps: 100
+  batch_size: 4
+  grad_accum_steps: 4
+  max_grad_norm: 1.0
+  dtype: bfloat16
+  log_interval: 10
+  save_interval: 500
+  eval_interval: 200
+  output_dir: ./checkpoints/sft
+  wandb: false
+
+model:
+  use_flash_attn: true
+  gradient_checkpointing: true
