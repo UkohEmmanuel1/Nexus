@@ -1,5 +1,6 @@
 import torch
-from src.model import Transformer, ModelConfig, LongContextConfig, RoPEScalingConfig, ThinkingConfig
+
+from src.model import LongContextConfig, ModelConfig, RoPEScalingConfig, ThinkingConfig, Transformer
 
 
 def get_config() -> ModelConfig:
@@ -17,9 +18,7 @@ def get_config() -> ModelConfig:
             enabled=True,
             max_seq_len=4096,
             sliding_window_size=64,
-            rope_scaling=RoPEScalingConfig(
-                type="yarn", factor=32.0, original_max_seq_len=128
-            ),
+            rope_scaling=RoPEScalingConfig(type="yarn", factor=32.0, original_max_seq_len=128),
         ),
         thinking=ThinkingConfig(
             enabled=False,
@@ -34,9 +33,14 @@ def get_config() -> ModelConfig:
 
 def test_yarn_rope():
     from src.model.rope import precompute_freqs_cis
+
     freqs = precompute_freqs_cis(
-        dim=64, max_seq_len=4096, theta=10000.0,
-        scaling_type="yarn", scaling_factor=32.0, original_max_seq_len=128,
+        dim=64,
+        max_seq_len=4096,
+        theta=10000.0,
+        scaling_type="yarn",
+        scaling_factor=32.0,
+        original_max_seq_len=128,
     )
     assert freqs.shape == (4096, 32)
 
@@ -49,14 +53,13 @@ def test_long_context_config():
 
 def test_sliding_window_attention():
     from src.model.attention import Attention
+
     config = get_config()
     config.long_context.sliding_window_size = 32
     attn = Attention(config, layer_id=0)
 
     batch_size, seq_len = 2, 64
     x = torch.randn(batch_size, seq_len, config.dim)
-    from src.model.rope import precompute_freqs_cis
-    freqs_cis = precompute_freqs_cis(config.head_dim, 128)
 
     mask = attn._sliding_window_mask(seq_len, 0, x.device, x.dtype)
     if mask is not None:
@@ -66,6 +69,7 @@ def test_sliding_window_attention():
 
 def test_hierarchical_memory():
     from src.model.context import HierarchicalMemory, compress_hidden
+
     config = get_config()
     memory = HierarchicalMemory(config)
 
@@ -126,14 +130,3 @@ def test_deep_think():
         )
     assert output.shape[0] == batch_size
     assert "Deep Think" in report
-
-
-if __name__ == "__main__":
-    test_yarn_rope()
-    test_long_context_config()
-    test_sliding_window_attention()
-    test_hierarchical_memory()
-    test_model_with_long_context()
-    test_model_thinking_mode()
-    test_deep_think()
-    print("All Phase A/B tests passed!")

@@ -1,6 +1,5 @@
 import argparse
 import logging
-from pathlib import Path
 
 import sentencepiece as spm
 

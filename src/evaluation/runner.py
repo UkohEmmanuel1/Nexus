@@ -1,8 +1,6 @@
 import json
-import logging
 import math
 from pathlib import Path
-from typing import Dict, List, Optional
 
 import torch
 from torch.utils.data import DataLoader
@@ -48,11 +46,11 @@ class Evaluator:
     @torch.no_grad()
     def generate_text(
         self,
-        prompts: List[str],
+        prompts: list[str],
         max_new_tokens: int = 100,
         temperature: float = 0.7,
         **kwargs,
-    ) -> List[str]:
+    ) -> list[str]:
         self.model.eval()
         results = []
 
@@ -72,7 +70,7 @@ class Evaluator:
 
         return results
 
-    def run_benchmark(self, benchmark: str, **kwargs) -> Dict:
+    def run_benchmark(self, benchmark: str, **kwargs) -> dict:
         logger.info(f"Running benchmark: {benchmark}")
         if benchmark == "mmlu":
             return self._evaluate_mmlu(**kwargs)
@@ -83,7 +81,7 @@ class Evaluator:
         else:
             raise ValueError(f"Unknown benchmark: {benchmark}")
 
-    def _evaluate_mmlu(self, **kwargs) -> Dict:
+    def _evaluate_mmlu(self, **kwargs) -> dict:
         try:
             from lm_eval import evaluator
             results = evaluator.simple_evaluate(
@@ -96,7 +94,7 @@ class Evaluator:
             logger.error("lm_eval not installed. Install with: pip install lm-eval")
             return {"error": "lm_eval not installed"}
 
-    def _evaluate_gsm8k(self, **kwargs) -> Dict:
+    def _evaluate_gsm8k(self, **kwargs) -> dict:
         try:
             from lm_eval import evaluator
             results = evaluator.simple_evaluate(
@@ -109,7 +107,7 @@ class Evaluator:
             logger.error("lm_eval not installed")
             return {"error": "lm_eval not installed"}
 
-    def _evaluate_humaneval(self, **kwargs) -> Dict:
+    def _evaluate_humaneval(self, **kwargs) -> dict:
         try:
             from evalplus.evaluate import evaluate
             results = evaluate(
@@ -132,7 +130,7 @@ def main():
     parser.add_argument("--output", type=str, default="results.json")
     args = parser.parse_args()
 
-    from src.model import Transformer, ModelConfig
+    from src.model import ModelConfig, Transformer
     from src.tokenizer import Tokenizer
 
     tokenizer = Tokenizer(args.tokenizer)

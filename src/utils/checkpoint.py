@@ -1,6 +1,4 @@
-import logging
 from pathlib import Path
-from typing import Dict, Optional
 
 import torch
 
@@ -10,7 +8,7 @@ logger = get_logger(__name__)
 
 
 def save_checkpoint(
-    state: Dict,
+    state: dict,
     filepath: str,
     keep_last_n: int = 3,
 ) -> None:
@@ -33,7 +31,7 @@ def load_checkpoint(
     scheduler: torch.optim.lr_scheduler._LRScheduler = None,
     map_location: str = None,
     strict: bool = True,
-) -> Dict:
+) -> dict:
     path = Path(filepath)
     if not path.exists():
         raise FileNotFoundError(f"Checkpoint not found: {filepath}")

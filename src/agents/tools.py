@@ -1,11 +1,9 @@
 import datetime
-import json
 import math
-import subprocess
-from typing import Any, Dict
+from typing import Any
 
 
-def calculator(expression: str) -> Dict[str, Any]:
+def calculator(expression: str) -> dict[str, Any]:
     try:
         result = eval(expression, {"__builtins__": {}}, math.__dict__)
         return {"result": result}
@@ -13,11 +11,11 @@ def calculator(expression: str) -> Dict[str, Any]:
         return {"error": str(e)}
 
 
-def current_datetime(format_str: str = "%Y-%m-%d %H:%M:%S") -> Dict[str, str]:
+def current_datetime(format_str: str = "%Y-%m-%d %H:%M:%S") -> dict[str, str]:
     return {"datetime": datetime.datetime.now().strftime(format_str)}
 
 
-def python_repl(code: str) -> Dict[str, Any]:
+def python_repl(code: str) -> dict[str, Any]:
     try:
         local_vars = {}
         exec(code, {"__builtins__": __builtins__}, local_vars)
@@ -26,7 +24,7 @@ def python_repl(code: str) -> Dict[str, Any]:
         return {"error": str(e)}
 
 
-def search_web(query: str) -> Dict[str, Any]:
+def search_web(query: str) -> dict[str, Any]:
     try:
         import requests
         response = requests.get(
@@ -40,7 +38,7 @@ def search_web(query: str) -> Dict[str, Any]:
         return {"error": str(e)}
 
 
-TOOL_REGISTRY: Dict[str, tuple[callable, str]] = {
+TOOL_REGISTRY: dict[str, tuple[callable, str]] = {
     "calculator": (calculator, "Evaluate a mathematical expression"),
     "current_datetime": (current_datetime, "Get the current date and time"),
     "python_repl": (python_repl, "Execute Python code and return the result"),
@@ -57,5 +55,5 @@ TOOL_DEFINITIONS = [
 ]
 
 
-def get_function_map() -> Dict[str, callable]:
+def get_function_map() -> dict[str, callable]:
     return {name: func for name, (func, _) in TOOL_REGISTRY.items()}

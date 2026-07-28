@@ -1,4 +1,4 @@
-from typing import Generator, List, Optional, Tuple
+from collections.abc import Generator
 
 import torch
 
@@ -22,12 +22,12 @@ class InferenceEngine:
         top_p: float = 0.9,
         top_k: int = 50,
         repetition_penalty: float = 1.0,
-        stop_strings: Optional[List[str]] = None,
+        stop_strings: list[str] | None = None,
         stream: bool = False,
         thinking_mode: bool = False,
         thinking_budget: int = 2048,
         return_thinking: bool = False,
-    ) -> str | Tuple[str, str]:
+    ) -> str | tuple[str, str]:
         input_ids = self.tokenizer.encode(prompt, add_bos=True)
         input_tensor = torch.tensor([input_ids], device=self.device)
 
@@ -82,7 +82,7 @@ class InferenceEngine:
         top_p: float,
         top_k: int,
         repetition_penalty: float,
-        stop_strings: Optional[List[str]],
+        stop_strings: list[str] | None,
         thinking_mode: bool = False,
         thinking_budget: int = 2048,
     ) -> Generator[str, None, None]:
@@ -150,7 +150,7 @@ class InferenceEngine:
 
         self.model.reset_kv_cache()
 
-    def deep_think(self, prompt: str, max_new_tokens: int = 512, n_hypotheses: int = 3) -> Tuple[str, str]:
+    def deep_think(self, prompt: str, max_new_tokens: int = 512, n_hypotheses: int = 3) -> tuple[str, str]:
         input_ids = self.tokenizer.encode(prompt, add_bos=True)
         input_tensor = torch.tensor([input_ids], device=self.device)
 
@@ -163,11 +163,11 @@ class InferenceEngine:
         output_text = self.tokenizer.decode(output_ids[0].tolist())
         return output_text, report
 
-    def chat(self, messages: List[dict], **kwargs) -> str:
+    def chat(self, messages: list[dict], **kwargs) -> str:
         prompt = self._format_chat(messages)
         return self.generate(prompt, **kwargs)
 
-    def _format_chat(self, messages: List[dict]) -> str:
+    def _format_chat(self, messages: list[dict]) -> str:
         formatted = ""
         for msg in messages:
             role = msg.get("role", "user")

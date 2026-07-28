@@ -1,5 +1,4 @@
 from dataclasses import dataclass, field
-from typing import Optional
 
 
 @dataclass
@@ -19,8 +18,8 @@ class RoPEScalingConfig:
     original_max_seq_len: int = 4096
     beta_fast: int = 32
     beta_slow: int = 1
-    mscale: Optional[float] = None
-    mscale_all_dim: Optional[float] = None
+    mscale: float | None = None
+    mscale_all_dim: float | None = None
 
 
 @dataclass

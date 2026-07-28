@@ -1,5 +1,4 @@
-import logging
-from typing import Callable, Dict, Optional
+from collections.abc import Callable
 
 import torch
 import torch.nn as nn
@@ -13,12 +12,12 @@ logger = get_logger(__name__)
 
 
 class ReasoningTrainer(Trainer):
-    def __init__(self, model: nn.Module, config: Dict, **kwargs):
+    def __init__(self, model: nn.Module, config: dict, **kwargs):
         super().__init__(model, config, **kwargs)
         self.thinking_loss_weight = config.get("thinking_loss_weight", 0.3)
         self.reward_temperature = config.get("reward_temperature", 0.1)
 
-    def train_step(self, batch: Dict) -> Dict:
+    def train_step(self, batch: dict) -> dict:
         input_ids = batch["input_ids"].to(self.device)
         labels = batch.get("labels", input_ids).to(self.device)
         thinking_mask = batch.get("thinking_mask", None)
@@ -59,7 +58,7 @@ class ReasoningTrainer(Trainer):
 
 
 class RLTrainer:
-    def __init__(self, model: nn.Module, reward_fn: Callable, config: Dict):
+    def __init__(self, model: nn.Module, reward_fn: Callable, config: dict):
         self.model = model
         self.reward_fn = reward_fn
         self.config = config
@@ -73,7 +72,7 @@ class RLTrainer:
         advantages = (advantages - advantages.mean()) / (advantages.std() + 1e-8)
         return advantages
 
-    def train_on_batch(self, batch: Dict) -> Dict:
+    def train_on_batch(self, batch: dict) -> dict:
         old_log_probs = batch["old_log_probs"].to(self.device)
         advantages = batch["advantages"].to(self.device)
         input_ids = batch["input_ids"].to(self.device)

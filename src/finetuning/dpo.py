@@ -1,11 +1,8 @@
-import logging
 from dataclasses import dataclass
-from typing import Dict, Optional
 
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
-from torch.utils.data import DataLoader
 
 from src.training.trainer import Trainer
 from src.utils.logging import get_logger
@@ -21,14 +18,14 @@ class DPOConfig:
 
 
 class DPOTrainer(Trainer):
-    def __init__(self, model: nn.Module, ref_model: nn.Module, config: Dict, dpo_config: Optional[DPOConfig] = None):
+    def __init__(self, model: nn.Module, ref_model: nn.Module, config: dict, dpo_config: DPOConfig | None = None):
         super().__init__(model, config)
         self.ref_model = ref_model
         self.ref_model.to(self.device)
         self.ref_model.eval()
         self.dpo_config = dpo_config or DPOConfig()
 
-    def train_step(self, batch: Dict) -> Dict:
+    def train_step(self, batch: dict) -> dict:
         chosen_ids = batch["chosen_input_ids"].to(self.device)
         rejected_ids = batch["rejected_input_ids"].to(self.device)
 

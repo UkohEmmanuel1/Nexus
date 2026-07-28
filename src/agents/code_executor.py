@@ -2,9 +2,8 @@ import ast
 import logging
 import subprocess
 import sys
-import tempfile
 import textwrap
-from typing import Any, Dict, Optional, Set
+from typing import Any
 
 logger = logging.getLogger(__name__)
 
@@ -28,7 +27,7 @@ class CodeExecutor:
     def __init__(self, timeout: int = 30):
         self.timeout = timeout
 
-    def execute(self, code: str) -> Dict[str, Any]:
+    def execute(self, code: str) -> dict[str, Any]:
         result = {"stdout": "", "stderr": "", "error": None, "success": False}
 
         wrapped = textwrap.dedent(f"""\
@@ -132,5 +131,5 @@ print(_stderr.getvalue())
         except SyntaxError as e:
             raise ValueError(f"Syntax error: {e}")
 
-    def __call__(self, code: str) -> Dict[str, Any]:
+    def __call__(self, code: str) -> dict[str, Any]:
         return self.execute(code)

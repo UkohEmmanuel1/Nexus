@@ -1,6 +1,4 @@
-import json
 import logging
-from typing import Dict, List, Optional
 
 logger = logging.getLogger(__name__)
 
@@ -9,7 +7,7 @@ class SearchGrounding:
     def __init__(self, search_func=None):
         self.search_func = search_func or self._default_search
 
-    def _default_search(self, query: str) -> List[Dict[str, str]]:
+    def _default_search(self, query: str) -> list[dict[str, str]]:
         try:
             import requests
             resp = requests.get(
@@ -41,7 +39,7 @@ class SearchGrounding:
             logger.error(f"Search failed: {e}")
             return [{"title": "Error", "snippet": str(e), "source": "error"}]
 
-    def search(self, query: str, top_k: int = 5) -> Dict:
+    def search(self, query: str, top_k: int = 5) -> dict:
         results = self.search_func(query)
         results = results[:top_k]
         return {

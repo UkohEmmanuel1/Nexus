@@ -1,4 +1,3 @@
-from typing import List, Optional
 
 import numpy as np
 
@@ -16,7 +15,7 @@ class Retriever:
         self.embedding_model = embedding_model
         self.top_k = top_k
 
-    def retrieve(self, query: str, top_k: Optional[int] = None) -> List[str]:
+    def retrieve(self, query: str, top_k: int | None = None) -> list[str]:
         k = top_k or self.top_k
         if self.embedding_model is not None:
             query_emb = self.embedding_model.encode([query])
@@ -26,7 +25,7 @@ class Retriever:
         results = self.index.search(query_emb, top_k=k)
         return [doc for doc, _ in results]
 
-    def retrieve_with_scores(self, query: str, top_k: Optional[int] = None) -> List[tuple[str, float]]:
+    def retrieve_with_scores(self, query: str, top_k: int | None = None) -> list[tuple[str, float]]:
         k = top_k or self.top_k
         if self.embedding_model is not None:
             query_emb = self.embedding_model.encode([query])

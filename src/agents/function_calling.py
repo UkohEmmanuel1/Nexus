@@ -1,5 +1,6 @@
 import json
-from typing import Any, Callable, Dict, List, Optional
+from collections.abc import Callable
+from typing import Any
 
 from src.inference.engine import InferenceEngine
 
@@ -8,8 +9,8 @@ class FunctionCallingAgent:
     def __init__(
         self,
         engine: InferenceEngine,
-        functions: List[Dict],
-        function_map: Dict[str, Callable],
+        functions: list[dict],
+        function_map: dict[str, Callable],
     ):
         self.engine = engine
         self.functions = functions
@@ -52,7 +53,7 @@ class FunctionCallingAgent:
             + "\n".join(func_descs)
         )
 
-    def _extract_function_call(self, text: str) -> Optional[tuple[str, dict]]:
+    def _extract_function_call(self, text: str) -> tuple[str, dict] | None:
         import re
         match = re.search(r"<function_call>(.*?)\n(.*?)</function_call>", text, re.DOTALL)
         if match:

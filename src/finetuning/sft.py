@@ -1,6 +1,3 @@
-import logging
-from pathlib import Path
-from typing import Dict, Optional
 
 import torch
 from torch.utils.data import DataLoader
@@ -12,7 +9,7 @@ logger = get_logger(__name__)
 
 
 class SFTTrainer(Trainer):
-    def train_step(self, batch: Dict) -> Dict:
+    def train_step(self, batch: dict) -> dict:
         input_ids = batch["input_ids"].to(self.device)
         attention_mask = batch.get("attention_mask", None)
         labels = batch.get("labels", input_ids).to(self.device)
@@ -48,7 +45,7 @@ def finetune_sft(
     num_epochs: int = 3,
     batch_size: int = 4,
     use_wandb: bool = False,
-    resume_from: Optional[str] = None,
+    resume_from: str | None = None,
 ):
     config = {
         "lr": lr,

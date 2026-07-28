@@ -1,14 +1,12 @@
 import json
 import re
-from typing import Any, Dict, List, Optional, Type
-
-import torch
+from typing import Any
 
 from src.inference.engine import InferenceEngine
 
 
 class SchemaConstraint:
-    def __init__(self, schema: Dict[str, Any]):
+    def __init__(self, schema: dict[str, Any]):
         self.schema = schema
         self._validate_schema()
 
@@ -24,7 +22,7 @@ class SchemaConstraint:
             "JSON response:"
         )
 
-    def parse_response(self, response: str) -> Dict:
+    def parse_response(self, response: str) -> dict:
         json_match = re.search(r'\{.*\}', response, re.DOTALL)
         if json_match:
             try:
@@ -41,11 +39,11 @@ class StructuredOutput:
     def generate(
         self,
         prompt: str,
-        schema: Dict[str, Any],
+        schema: dict[str, Any],
         max_retries: int = 3,
         temperature: float = 0.2,
         **kwargs,
-    ) -> Dict:
+    ) -> dict:
         constraint = SchemaConstraint(schema)
         formatted_prompt = constraint.format_prompt(prompt)
 
@@ -58,7 +56,7 @@ class StructuredOutput:
             )
             try:
                 return constraint.parse_response(response)
-            except ValueError as e:
+            except ValueError:
                 if attempt == max_retries - 1:
                     raise
                 continue
@@ -67,10 +65,10 @@ class StructuredOutput:
     def generate_json(
         self,
         prompt: str,
-        properties: Dict[str, str],
-        required: List[str] = None,
+        properties: dict[str, str],
+        required: list[str] = None,
         **kwargs,
-    ) -> Dict:
+    ) -> dict:
         schema = {
             "type": "object",
             "properties": {k: {"type": v} for k, v in properties.items()},
@@ -80,8 +78,8 @@ class StructuredOutput:
         return self.generate(prompt, schema, **kwargs)
 
     def generate_list(
-        self, prompt: str, item_schema: Dict, **kwargs
-    ) -> List:
+        self, prompt: str, item_schema: dict, **kwargs
+    ) -> list:
         schema = {
             "type": "array",
             "items": item_schema,

@@ -3,10 +3,10 @@ import torch.nn as nn
 import torch.nn.functional as F
 
 from .config import ModelConfig
+from .context import HierarchicalMemory, create_long_context_mask
 from .rmsnorm import RMSNorm
 from .rope import precompute_freqs_cis
 from .transformer_block import TransformerBlock
-from .context import HierarchicalMemory, create_long_context_mask, compress_hidden
 
 
 class Transformer(nn.Module):

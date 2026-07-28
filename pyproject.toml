@@ -1,6 +1,6 @@
 [build-system]
 requires = ["setuptools>=68.0", "wheel"]
-build-backend = "setuptools.backends._legacy:_Backend"
+build-backend = "setuptools.build_meta"
 
 [project]
 name = "nexus"
@@ -44,10 +44,10 @@ quant = ["torchao>=0.1"]
 all = ["nexus[dev,deepspeed,finetune,inference,eval,quant]"]
 
 [project.scripts]
-openllm = "src.inference.cli:main"
-openllm-train = "src.training.trainer:main"
-openllm-eval = "src.evaluation.runner:main"
-openllm-server = "src.inference.server:main"
+nexus = "src.inference.cli:main"
+nexus-train = "src.training.trainer:main"
+nexus-eval = "src.evaluation.runner:main"
+nexus-server = "src.inference.server:main"
 
 [tool.setuptools.packages.find]
 where = ["."]
@@ -59,6 +59,13 @@ target-version = "py310"
 
 [tool.ruff.lint]
 select = ["E", "F", "W", "I", "N", "UP"]
+
+[tool.mypy]
+python_version = "3.10"
+strict = false
+ignore_missing_imports = true
+warn_unused_ignores = true
+exclude = ["build/", "dist/", "examples/"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]

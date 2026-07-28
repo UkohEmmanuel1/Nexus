@@ -1,8 +1,6 @@
-import os
 import fnmatch
 import logging
 from pathlib import Path
-from typing import List, Optional
 
 logger = logging.getLogger(__name__)
 
@@ -12,7 +10,7 @@ class FileSearch:
         self.root_path = Path(root_path)
         self.index: dict[str, list[str]] = {}
 
-    def index_directory(self, path: Optional[str] = None, patterns: List[str] = None):
+    def index_directory(self, path: str | None = None, patterns: list[str] = None):
         search_path = Path(path) if path else self.root_path
         if patterns is None:
             patterns = ["*.py", "*.js", "*.ts", "*.md", "*.txt", "*.yaml", "*.json", "*.html", "*.css"]
@@ -30,7 +28,7 @@ class FileSearch:
 
         logger.info(f"Indexed {len(self.index)} files from {search_path}")
 
-    def search(self, query: str, max_results: int = 10) -> List[dict]:
+    def search(self, query: str, max_results: int = 10) -> list[dict]:
         results = []
         query_lower = query.lower()
 
@@ -55,7 +53,7 @@ class FileSearch:
         results.sort(key=lambda x: -x["score"])
         return results[:max_results]
 
-    def read_file(self, filepath: str, max_lines: int = None) -> Optional[str]:
+    def read_file(self, filepath: str, max_lines: int = None) -> str | None:
         full_path = self.root_path / filepath
         if full_path.exists() and full_path.is_file():
             content = full_path.read_text(encoding="utf-8", errors="ignore")
@@ -65,7 +63,7 @@ class FileSearch:
             return content
         return None
 
-    def find_files(self, pattern: str) -> List[str]:
+    def find_files(self, pattern: str) -> list[str]:
         matches = []
         for filepath in self.index:
             if fnmatch.fnmatch(filepath, pattern):

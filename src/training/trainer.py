@@ -1,16 +1,14 @@
-import logging
 import math
 import time
 from pathlib import Path
-from typing import Callable, Dict, Optional
 
 import torch
 import torch.nn as nn
-from torch.utils.data import DataLoader
 from torch.optim import AdamW
 from torch.optim.lr_scheduler import CosineAnnealingLR, LinearLR, SequentialLR
+from torch.utils.data import DataLoader
 
-from src.utils.checkpoint import save_checkpoint, load_checkpoint
+from src.utils.checkpoint import load_checkpoint, save_checkpoint
 from src.utils.logging import get_logger
 
 logger = get_logger(__name__)
@@ -20,7 +18,7 @@ class Trainer:
     def __init__(
         self,
         model: nn.Module,
-        config: Dict,
+        config: dict,
         use_wandb: bool = False,
     ):
         self.model = model
@@ -81,7 +79,7 @@ class Trainer:
             milestones=[self.warmup_steps],
         )
 
-    def train_step(self, batch: Dict) -> Dict:
+    def train_step(self, batch: dict) -> dict:
         input_ids = batch["input_ids"].to(self.device)
         labels = batch.get("labels", input_ids).to(self.device)
 
@@ -118,8 +116,8 @@ class Trainer:
     def train(
         self,
         train_dataloader: DataLoader,
-        eval_dataloader: Optional[DataLoader] = None,
-        resume_from: Optional[str] = None,
+        eval_dataloader: DataLoader | None = None,
+        resume_from: str | None = None,
     ):
         if resume_from:
             self._resume(resume_from)
@@ -240,7 +238,7 @@ def main():
 
     @hydra.main(version_base=None, config_path="../../configs/training", config_name="pretrain")
     def _main(cfg: DictConfig):
-        from src.model import Transformer, ModelConfig, MoEConfig
+        from src.model import ModelConfig, MoEConfig, Transformer
         model_cfg = ModelConfig(
             dim=cfg.model.dim,
             n_layers=cfg.model.n_layers,

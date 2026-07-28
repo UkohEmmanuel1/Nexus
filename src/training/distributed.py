@@ -49,6 +49,7 @@ def is_main_process() -> bool:
 def wrap_fsdp(model: torch.nn.Module, **kwargs):
     from torch.distributed.fsdp import FullyShardedDataParallel as FSDP
     from torch.distributed.fsdp.wrap import transformer_auto_wrap_policy
+
     from src.model.transformer_block import TransformerBlock
 
     auto_wrap_policy = transformer_auto_wrap_policy(transformer_layer_cls={TransformerBlock})

@@ -1,0 +1,12 @@
+{
+  "name": "nexus-llm",
+  "version": "0.1.0",
+  "description": "Nexus LLM - CLI and API server for your own language model",
+  "bin": {
+    "nexus": "./bin/nexus"
+  },
+  "scripts": {
+    "postinstall": "node install.js"
+  },
+  "license": "MIT"
+}

@@ -1,4 +1,4 @@
-.PHONY: install dev test lint format clean train eval chat server docker
+.PHONY: install dev test lint format clean train eval chat server docker precommit
 
 install:
 	pip install -e ".[all]"
@@ -10,11 +10,11 @@ test:
 	pytest tests/ -v --tb=short
 
 lint:
-	ruff check src/
-	ruff format --check src/
+	ruff check src/ tests/
+	ruff format --check src/ tests/
 
 format:
-	ruff format src/
+	ruff format src/ tests/
 
 train:
 	python -m src.training.trainer
@@ -23,10 +23,10 @@ eval:
 	python -m src.evaluation.runner --model checkpoints/model.pt --tokenizer tokenizer/tokenizer.model
 
 chat:
-	python -m src.inference.cli --model checkpoints/model.pt --tokenizer tokenizer/tokenizer.model
+	nexus
 
 server:
-	python -m src.inference.server
+	nexus --serve
 
 tokenizer-train:
 	python -m src.tokenizer.train --input data/corpus.txt --model-prefix tokenizer/tokenizer --vocab-size 128000
@@ -37,7 +37,10 @@ docker-build:
 docker-compose:
 	docker-compose -f docker/docker-compose.yml up
 
+precommit:
+	pre-commit install
+
 clean:
-	find . -type d -name "__pycache__" -exec rm -rf {} + 2>/dev/null || true
-	find . -type f -name "*.pyc" -delete
-	rm -rf build/ dist/ *.egg-info/
+	Get-ChildItem -Recurse -Directory -Filter "__pycache__" | Remove-Item -Recurse -Force 2>$null
+	Get-ChildItem -Recurse -Filter "*.pyc" | Remove-Item -Force 2>$null
+	Remove-Item -Recurse -Force -Path "build", "dist", "*.egg-info" -ErrorAction SilentlyContinue

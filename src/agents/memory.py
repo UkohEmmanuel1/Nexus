@@ -1,18 +1,16 @@
-from collections import deque
-from typing import Any, Dict, List, Optional
 
 
 class ConversationMemory:
     def __init__(self, max_tokens: int = 4096, summarizer=None):
-        self.messages: List[Dict[str, str]] = []
+        self.messages: list[dict[str, str]] = []
         self.max_tokens = max_tokens
         self.summarizer = summarizer
-        self.summary: Optional[str] = None
+        self.summary: str | None = None
 
     def add(self, role: str, content: str):
         self.messages.append({"role": role, "content": content})
 
-    def get_context(self) -> List[Dict[str, str]]:
+    def get_context(self) -> list[dict[str, str]]:
         if self.summary:
             summary_msg = {"role": "system", "content": f"Conversation summary: {self.summary}"}
             recent = self.messages[-4:] if len(self.messages) > 4 else self.messages

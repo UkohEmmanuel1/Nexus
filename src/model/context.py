@@ -1,5 +1,5 @@
+
 import torch
-from typing import List, Optional, Tuple
 
 from .config import ModelConfig
 
@@ -10,8 +10,8 @@ class HierarchicalMemory:
         self.chunk_size = config.long_context.chunk_size
         self.compress_ratio = config.long_context.compress_ratio
         self.memory_tokens = config.long_context.memory_tokens
-        self.memories: List[torch.Tensor] = []
-        self.segment_ids: List[int] = []
+        self.memories: list[torch.Tensor] = []
+        self.segment_ids: list[int] = []
 
     def clear(self):
         self.memories = []
@@ -20,12 +20,12 @@ class HierarchicalMemory:
     def add_segment(self, hidden_states: torch.Tensor, segment_id: int):
         self.memories.append(hidden_states)
         self.segment_ids.append(segment_id)
-        max_memories = self.config.max_seq_len // self.chunk_size
+        max_memories = max(1, self.config.max_seq_len // self.chunk_size)
         while len(self.memories) > max_memories:
             self.memories.pop(0)
             self.segment_ids.pop(0)
 
-    def get_memory_tokens(self, n_layers: int, device: torch.device, dtype: torch.dtype) -> Optional[torch.Tensor]:
+    def get_memory_tokens(self, n_layers: int, device: torch.device, dtype: torch.dtype) -> torch.Tensor | None:
         if not self.memories:
             return None
         pooled = []

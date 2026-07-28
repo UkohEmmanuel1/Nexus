@@ -1,6 +1,7 @@
 import json
 import re
-from typing import Any, Callable, Dict, List, Optional
+from collections.abc import Callable
+from typing import Any
 
 from src.inference.engine import InferenceEngine
 
@@ -9,7 +10,7 @@ class TaskPlanner:
     def __init__(self, engine: InferenceEngine):
         self.engine = engine
 
-    def decompose(self, task: str, max_steps: int = 5) -> List[Dict[str, str]]:
+    def decompose(self, task: str, max_steps: int = 5) -> list[dict[str, str]]:
         prompt = (
             "You are a task planner. Break down the following complex task into "
             "a sequence of smaller, executable sub-tasks. Each sub-task should be "
@@ -32,7 +33,7 @@ class TaskPlanner:
                 pass
         return [{"id": 1, "description": task, "tool": "reason", "depends_on": []}]
 
-    def create_execution_plan(self, task: str) -> Dict[str, Any]:
+    def create_execution_plan(self, task: str) -> dict[str, Any]:
         sub_tasks = self.decompose(task)
         return {
             "original_task": task,
@@ -42,11 +43,11 @@ class TaskPlanner:
 
 
 class StepExecutor:
-    def __init__(self, engine: InferenceEngine, tools: Dict[str, Callable]):
+    def __init__(self, engine: InferenceEngine, tools: dict[str, Callable]):
         self.engine = engine
         self.tools = tools
 
-    def execute_step(self, step: Dict[str, Any], context: Dict[str, Any]) -> Dict[str, Any]:
+    def execute_step(self, step: dict[str, Any], context: dict[str, Any]) -> dict[str, Any]:
         tool = step.get("tool", "reason")
         description = step.get("description", "")
 

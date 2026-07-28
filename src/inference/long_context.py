@@ -1,11 +1,9 @@
 import logging
-from typing import Generator, List, Optional, Tuple
 
 import torch
 
 from src.model.config import ModelConfig
-from src.model.context import HierarchicalMemory, create_long_context_mask, compress_hidden
-from src.inference.engine import InferenceEngine
+from src.model.context import HierarchicalMemory
 
 logger = logging.getLogger(__name__)
 
@@ -21,7 +19,7 @@ class LongContextProcessor:
 
     def process_long_input(
         self, text: str, max_chunks: int = None
-    ) -> Tuple[torch.Tensor, List[str]]:
+    ) -> tuple[torch.Tensor, list[str]]:
         tokens = self.tokenizer.encode(text, add_bos=True)
         chunks = []
         chunk_texts = []

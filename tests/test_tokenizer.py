@@ -1,6 +1,4 @@
 import pytest
-import tempfile
-from pathlib import Path
 
 from src.tokenizer import Tokenizer
 
@@ -23,7 +21,3 @@ def test_tokenizer_special_ids():
     assert isinstance(tokenizer.eos_id, int)
     assert isinstance(tokenizer.unk_id, int)
     assert isinstance(tokenizer.pad_id, int)
-
-
-if __name__ == "__main__":
-    pytest.main([__file__])

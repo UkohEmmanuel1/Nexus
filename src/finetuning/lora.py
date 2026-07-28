@@ -1,5 +1,3 @@
-import logging
-from typing import Dict, Optional
 
 import torch
 
@@ -16,7 +14,7 @@ def apply_lora(
     target_modules: list[str] = None,
 ) -> torch.nn.Module:
     try:
-        from peft import LoraConfig, get_peft_model, TaskType
+        from peft import LoraConfig, TaskType, get_peft_model
     except ImportError:
         logger.error("peft not installed. Install with: pip install peft")
         raise
@@ -49,7 +47,7 @@ def apply_qlora(
 ) -> torch.nn.Module:
     try:
         import bitsandbytes as bnb
-        from peft import LoraConfig, get_peft_model, TaskType
+        from peft import LoraConfig, TaskType, get_peft_model
         from transformers import BitsAndBytesConfig
     except ImportError:
         logger.error("bitsandbytes or peft not installed")

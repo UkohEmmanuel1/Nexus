@@ -1,6 +1,6 @@
+
 import torch
 import torch.nn as nn
-from typing import List, Optional, Union
 
 from .vision_encoder import VisionEncoder
 
@@ -10,7 +10,7 @@ class MultimodalEmbedding(nn.Module):
         self,
         text_vocab_size: int,
         llm_dim: int,
-        vision_encoder: Optional[VisionEncoder] = None,
+        vision_encoder: VisionEncoder | None = None,
         image_token_id: int = 128010,
         num_image_tokens: int = 256,
     ):
@@ -28,7 +28,7 @@ class MultimodalEmbedding(nn.Module):
     def forward(
         self,
         input_ids: torch.Tensor,
-        images: Optional[torch.Tensor] = None,
+        images: torch.Tensor | None = None,
     ) -> torch.Tensor:
         text_embeds = self.text_embed(input_ids)
 

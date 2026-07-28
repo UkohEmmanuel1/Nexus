@@ -3,7 +3,7 @@ import torch.nn as nn
 import torch.nn.functional as F
 
 from .config import ModelConfig
-from .rope import precompute_freqs_cis, apply_rotary_emb
+from .rope import apply_rotary_emb
 
 
 class Attention(nn.Module):

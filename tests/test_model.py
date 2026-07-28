@@ -1,7 +1,7 @@
 import pytest
 import torch
 
-from src.model import Transformer, ModelConfig, MoEConfig
+from src.model import ModelConfig, MoEConfig, Transformer
 
 
 def get_test_config(moe: bool = False) -> ModelConfig:

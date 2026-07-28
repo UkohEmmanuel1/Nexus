@@ -1,7 +1,6 @@
 import json
-import logging
 import re
-from typing import Callable, Dict, List, Optional
+from collections.abc import Callable
 
 from src.inference.engine import InferenceEngine
 from src.utils.logging import get_logger
@@ -13,7 +12,7 @@ class ReActAgent:
     def __init__(
         self,
         engine: InferenceEngine,
-        tools: Dict[str, Callable],
+        tools: dict[str, Callable],
         max_steps: int = 10,
     ):
         self.engine = engine

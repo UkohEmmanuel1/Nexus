@@ -1,5 +1,4 @@
 from pathlib import Path
-from typing import List, Optional, Union
 
 import torch
 from PIL import Image
@@ -18,11 +17,11 @@ class ImageProcessor:
             transforms.Normalize(mean=self.mean, std=self.std),
         ])
 
-    def load_image(self, image_path: Union[str, Path]) -> torch.Tensor:
+    def load_image(self, image_path: str | Path) -> torch.Tensor:
         img = Image.open(image_path).convert("RGB")
         return self.transform(img).unsqueeze(0)
 
-    def load_images(self, image_paths: List[Union[str, Path]]) -> torch.Tensor:
+    def load_images(self, image_paths: list[str | Path]) -> torch.Tensor:
         tensors = [self.load_image(p) for p in image_paths]
         return torch.cat(tensors, dim=0)
 

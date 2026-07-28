@@ -1,6 +1,5 @@
 import logging
 from pathlib import Path
-from typing import List, Optional
 
 import sentencepiece as spm
 
@@ -48,24 +47,24 @@ class Tokenizer:
     def pad_id(self) -> int:
         return self.sp.pad_id() if self.sp else 0
 
-    def encode(self, text: str, add_bos: bool = True, add_eos: bool = False) -> List[int]:
+    def encode(self, text: str, add_bos: bool = True, add_eos: bool = False) -> list[int]:
         if self.sp is None:
             raise RuntimeError("Tokenizer not loaded")
         return self.sp.encode(text, add_bos=add_bos, add_eos=add_eos)
 
-    def decode(self, ids: List[int], skip_special_tokens: bool = False) -> str:
+    def decode(self, ids: list[int], skip_special_tokens: bool = False) -> str:
         if self.sp is None:
             raise RuntimeError("Tokenizer not loaded")
         return self.sp.decode(ids)
 
     def encode_batch(
-        self, texts: List[str], add_bos: bool = True, add_eos: bool = False
-    ) -> List[List[int]]:
+        self, texts: list[str], add_bos: bool = True, add_eos: bool = False
+    ) -> list[list[int]]:
         if self.sp is None:
             raise RuntimeError("Tokenizer not loaded")
         return self.sp.encode(texts, add_bos=add_bos, add_eos=add_eos)
 
-    def decode_batch(self, batch: List[List[int]]) -> List[str]:
+    def decode_batch(self, batch: list[list[int]]) -> list[str]:
         if self.sp is None:
             raise RuntimeError("Tokenizer not loaded")
         return self.sp.decode(batch)
@@ -76,5 +75,5 @@ class Tokenizer:
     def __len__(self) -> int:
         return self.sp.vocab_size() if self.sp else self.vocab_size
 
-    def __call__(self, text: str, **kwargs) -> List[int]:
+    def __call__(self, text: str, **kwargs) -> list[int]:
         return self.encode(text, **kwargs)

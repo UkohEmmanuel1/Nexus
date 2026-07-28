@@ -1,6 +1,6 @@
-from typing import List, Optional
 
 from src.inference.engine import InferenceEngine
+
 from .retriever import Retriever
 
 
@@ -9,7 +9,7 @@ class RAGGenerator:
         self,
         engine: InferenceEngine,
         retriever: Retriever,
-        system_prompt: Optional[str] = None,
+        system_prompt: str | None = None,
     ):
         self.engine = engine
         self.retriever = retriever

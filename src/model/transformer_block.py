@@ -2,10 +2,10 @@ import torch
 import torch.nn as nn
 import torch.utils.checkpoint as checkpoint
 
-from .config import ModelConfig
-from .rmsnorm import RMSNorm
 from .attention import Attention
+from .config import ModelConfig
 from .feedforward import FeedForward, MoE
+from .rmsnorm import RMSNorm
 
 
 class TransformerBlock(nn.Module):

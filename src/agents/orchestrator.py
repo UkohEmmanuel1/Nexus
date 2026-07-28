@@ -1,14 +1,16 @@
-from typing import Any, Callable, Dict, List, Optional
+from collections.abc import Callable
+from typing import Any
 
 from src.inference.engine import InferenceEngine
-from .planner import TaskPlanner, StepExecutor
+
+from .planner import StepExecutor, TaskPlanner
 
 
 class AgentOrchestrator:
     def __init__(
         self,
         engine: InferenceEngine,
-        tools: Dict[str, Callable],
+        tools: dict[str, Callable],
         max_iterations: int = 10,
     ):
         self.engine = engine
@@ -17,7 +19,7 @@ class AgentOrchestrator:
         self.executor = StepExecutor(engine, tools)
         self.max_iterations = max_iterations
 
-    def run(self, task: str) -> Dict[str, Any]:
+    def run(self, task: str) -> dict[str, Any]:
         plan = self.planner.create_execution_plan(task)
         context = {"results": {}, "accumulated": ""}
 
@@ -78,7 +80,7 @@ class AgentOrchestrator:
         yield {"type": "final", "data": final_answer}
 
 
-def create_orchestrator(engine: InferenceEngine, extra_tools: Dict[str, Callable] = None) -> AgentOrchestrator:
+def create_orchestrator(engine: InferenceEngine, extra_tools: dict[str, Callable] = None) -> AgentOrchestrator:
     from .tools import get_function_map
     tools = get_function_map()
     if extra_tools:

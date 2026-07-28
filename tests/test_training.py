@@ -2,7 +2,7 @@ import pytest
 import torch
 from torch.utils.data import DataLoader, TensorDataset
 
-from src.model import Transformer, ModelConfig
+from src.model import ModelConfig, Transformer
 from src.training.trainer import Trainer
 
 
@@ -28,7 +28,16 @@ def get_test_config() -> dict:
 
 def test_trainer_creation():
     config = get_test_config()
-    model_config = ModelConfig(dim=64, n_layers=2, n_heads=4, n_kv_heads=2, vocab_size=100, max_seq_len=32, use_flash_attn=False, dtype="float32")
+    model_config = ModelConfig(
+        dim=64,
+        n_layers=2,
+        n_heads=4,
+        n_kv_heads=2,
+        vocab_size=100,
+        max_seq_len=32,
+        use_flash_attn=False,
+        dtype="float32",
+    )
     model = Transformer(model_config)
     trainer = Trainer(model, config)
 
@@ -38,7 +47,16 @@ def test_trainer_creation():
 
 def test_trainer_training_step():
     config = get_test_config()
-    model_config = ModelConfig(dim=64, n_layers=2, n_heads=4, n_kv_heads=2, vocab_size=100, max_seq_len=32, use_flash_attn=False, dtype="float32")
+    model_config = ModelConfig(
+        dim=64,
+        n_layers=2,
+        n_heads=4,
+        n_kv_heads=2,
+        vocab_size=100,
+        max_seq_len=32,
+        use_flash_attn=False,
+        dtype="float32",
+    )
     model = Transformer(model_config)
     trainer = Trainer(model, config)
 
@@ -71,7 +89,16 @@ class DictDataset(torch.utils.data.Dataset):
 
 def test_trainer_evaluate():
     config = get_test_config()
-    model_config = ModelConfig(dim=64, n_layers=2, n_heads=4, n_kv_heads=2, vocab_size=100, max_seq_len=32, use_flash_attn=False, dtype="float32")
+    model_config = ModelConfig(
+        dim=64,
+        n_layers=2,
+        n_heads=4,
+        n_kv_heads=2,
+        vocab_size=100,
+        max_seq_len=32,
+        use_flash_attn=False,
+        dtype="float32",
+    )
     model = Transformer(model_config)
     trainer = Trainer(model, config)
 

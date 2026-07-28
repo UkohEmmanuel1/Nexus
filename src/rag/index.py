@@ -1,6 +1,5 @@
 import pickle
 from pathlib import Path
-from typing import List, Optional
 
 import numpy as np
 
@@ -8,17 +7,17 @@ import numpy as np
 class DocumentIndex:
     def __init__(self, embedding_dim: int = 4096):
         self.embedding_dim = embedding_dim
-        self.documents: List[str] = []
-        self.embeddings: Optional[np.ndarray] = None
+        self.documents: list[str] = []
+        self.embeddings: np.ndarray | None = None
 
-    def add_documents(self, documents: List[str], embeddings: np.ndarray):
+    def add_documents(self, documents: list[str], embeddings: np.ndarray):
         self.documents.extend(documents)
         if self.embeddings is None:
             self.embeddings = embeddings
         else:
             self.embeddings = np.vstack([self.embeddings, embeddings])
 
-    def search(self, query_embedding: np.ndarray, top_k: int = 5) -> List[tuple[str, float]]:
+    def search(self, query_embedding: np.ndarray, top_k: int = 5) -> list[tuple[str, float]]:
         if self.embeddings is None or len(self.embeddings) == 0:
             return []
 

@@ -4,7 +4,7 @@
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 [![Python 3.10+](https://img.shields.io/badge/python-3.10+-blue.svg)](pyproject.toml)
-[![Tests](https://img.shields.io/badge/tests-17%20passing-brightgreen)](#)
+[![Tests](https://img.shields.io/badge/tests-passing-brightgreen)](#)
 
 ---
 
@@ -31,21 +31,20 @@
 pip install -e ".[all]"
 
 # Train tokenizer (requires text corpus)
-python -m src.tokenizer.train --input data/corpus.txt --vocab-size 128000
+nexus-train --input data/corpus.txt --vocab-size 128000
 
 # Chat with a trained model
-python -m src.inference.cli \
-    --model checkpoints/model.pt \
-    --tokenizer tokenizer/tokenizer.model
+nexus --model checkpoints/model.pt --tokenizer tokenizer/tokenizer.model
 
 # Thinking mode
-python -m src.inference.cli \
-    --model checkpoints/model.pt \
-    --tokenizer tokenizer/tokenizer.model \
-    --thinking
+nexus --model checkpoints/model.pt --tokenizer tokenizer/tokenizer.model --thinking
 
 # API server
-python -m src.inference.server
+nexus --serve --api-key sk-your-key
+
+# Or install globally via npm
+cd packages/nexus && npm link
+nexus --model checkpoints/model.pt
 ```
 
 ---
