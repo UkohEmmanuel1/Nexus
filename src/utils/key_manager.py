@@ -43,8 +43,15 @@ class KeyManager:
         with sqlite3.connect(self.db_path) as conn:
             cursor = conn.cursor()
             cursor.execute(
-                "UPDATE api_keys SET status = 'revoked' WHERE key = ?",
+                "UPDATE api_keys SET status = 'revoked' WHERE key = ? AND status = 'active'",
                 (key,)
             )
             conn.commit()
             return cursor.rowcount > 0
+
+    def list_keys(self) -> list[dict]:
+        with sqlite3.connect(self.db_path) as conn:
+            conn.row_factory = sqlite3.Row
+            cursor = conn.cursor()
+            cursor.execute("SELECT key, name, created_at, status FROM api_keys")
+            return [dict(row) for row in cursor.fetchall()]

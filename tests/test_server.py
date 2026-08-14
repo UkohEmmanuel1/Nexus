@@ -108,6 +108,17 @@ def test_server_authentication_and_routes(mock_engine, monkeypatch):
     generated_key = generated_data["key"]
     assert generated_data["name"] == "developer_1"
 
+    # 4c. List keys without admin key should fail
+    res = client.get("/v1/keys")
+    assert res.status_code == 401
+
+    # 4d. List keys with admin key should succeed
+    res = client.get("/v1/keys", headers={"X-API-Key": "admin_api_key"})
+    assert res.status_code == 200
+    keys_list = res.json()
+    assert len(keys_list) >= 1
+    assert any(k["key"] == generated_key for k in keys_list)
+
     # 5. Access protected route with the newly generated key
     res = client.post(
         "/chat",

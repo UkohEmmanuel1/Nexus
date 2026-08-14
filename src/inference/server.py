@@ -82,9 +82,13 @@ def create_app(
 
     @app.middleware("http")
     async def auth_middleware(request: Request, call_next):
-        if request.url.path not in ("/health", "/models", "/v1/keys/generate"):
-            await check_auth(request)
-            await check_rate_limit(request)
+        if request.url.path not in ("/health", "/models", "/v1/keys/generate", "/v1/keys"):
+            try:
+                await check_auth(request)
+                await check_rate_limit(request)
+            except HTTPException as e:
+                from fastapi.responses import JSONResponse
+                return JSONResponse(status_code=e.status_code, content={"detail": e.detail})
         return await call_next(request)
 
     # --- Models ---
@@ -137,6 +141,16 @@ def create_app(
                 raise HTTPException(401, "unauthorized to generate keys")
         new_key = key_manager.generate_key(req.name)
         return {"key": new_key, "name": req.name}
+
+    @app.get("/v1/keys")
+    async def list_keys(request: Request):
+        admin_key = os.environ.get("NEXUS_ADMIN_KEY") or api_key
+        if admin_key:
+            auth_header = request.headers.get("Authorization", "")
+            provided = auth_header[7:] if auth_header.startswith("Bearer ") else request.headers.get("X-API-Key", "")
+            if provided != admin_key:
+                raise HTTPException(401, "unauthorized to list keys")
+        return key_manager.list_keys()
 
     @app.post("/v1/keys/revoke")
     async def revoke_key(req: RevokeKeyRequest, request: Request):
