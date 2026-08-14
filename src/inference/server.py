@@ -9,6 +9,7 @@ from fastapi.responses import StreamingResponse
 from pydantic import BaseModel
 
 from src.inference.engine import InferenceEngine
+from src.utils.key_manager import KeyManager
 
 
 def create_app(
@@ -29,10 +30,10 @@ def create_app(
         allow_headers=["*"],
     )
 
+    key_manager = KeyManager()
+
     # --- Auth ---
     async def check_auth(request: Request):
-        if not api_key:
-            return
         auth_header = request.headers.get("Authorization", "")
         api_key_header = request.headers.get("X-API-Key", "")
         query_key = request.query_params.get("api_key", "")
@@ -45,20 +46,32 @@ def create_app(
         elif query_key:
             provided = query_key
 
-        if provided != api_key:
-            raise HTTPException(401, "unauthorized")
+        # If a master/environment api_key is configured, it acts as a valid key.
+        if api_key and provided == api_key:
+            return
+
+        # Otherwise, check the SQLite database
+        if provided and key_manager.validate_key(provided):
+            return
+
+        raise HTTPException(401, "unauthorized")
 
     # --- Rate limiter ---
     rate_store: dict[str, list[float]] = defaultdict(list)
 
     async def check_rate_limit(request: Request):
-        if not api_key:
-            return
-        key = (
-            request.headers.get("X-API-Key")
-            or request.headers.get("Authorization", "").removeprefix("Bearer ")
-            or "anonymous"
-        )
+        auth_header = request.headers.get("Authorization", "")
+        api_key_header = request.headers.get("X-API-Key", "")
+        query_key = request.query_params.get("api_key", "")
+
+        key = "anonymous"
+        if auth_header.startswith("Bearer "):
+            key = auth_header[7:]
+        elif api_key_header:
+            key = api_key_header
+        elif query_key:
+            key = query_key
+
         now = time.time()
         window = 60.0
         timestamps = rate_store[key]
@@ -69,12 +82,18 @@ def create_app(
 
     @app.middleware("http")
     async def auth_middleware(request: Request, call_next):
-        if request.url.path not in ("/health", "/models"):
+        if request.url.path not in ("/health", "/models", "/v1/keys/generate"):
             await check_auth(request)
             await check_rate_limit(request)
         return await call_next(request)
 
     # --- Models ---
+    class GenerateKeyRequest(BaseModel):
+        name: str
+
+    class RevokeKeyRequest(BaseModel):
+        key: str
+
     class ChatRequest(BaseModel):
         message: str
         max_tokens: int = 512
@@ -83,6 +102,7 @@ def create_app(
 
     class GenerateRequest(BaseModel):
         prompt: str
+
         max_tokens: int = 512
         temperature: float = 0.7
 
@@ -106,6 +126,25 @@ def create_app(
     @app.get("/models")
     async def list_models():
         return {"models": ["nexus-3b"]}
+
+    @app.post("/v1/keys/generate")
+    async def generate_key(req: GenerateKeyRequest, request: Request):
+        admin_key = os.environ.get("NEXUS_ADMIN_KEY") or api_key
+        if admin_key:
+            auth_header = request.headers.get("Authorization", "")
+            provided = auth_header[7:] if auth_header.startswith("Bearer ") else request.headers.get("X-API-Key", "")
+            if provided != admin_key:
+                raise HTTPException(401, "unauthorized to generate keys")
+        new_key = key_manager.generate_key(req.name)
+        return {"key": new_key, "name": req.name}
+
+    @app.post("/v1/keys/revoke")
+    async def revoke_key(req: RevokeKeyRequest, request: Request):
+        await check_auth(request)
+        success = key_manager.revoke_key(req.key)
+        if not success:
+            raise HTTPException(404, "key not found or already revoked")
+        return {"status": "success", "message": "Key revoked successfully"}
 
     @app.post("/chat")
     async def chat(req: ChatRequest):
