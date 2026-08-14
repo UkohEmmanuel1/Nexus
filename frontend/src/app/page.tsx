@@ -16,6 +16,84 @@ interface Message {
   error?: boolean;
 }
 
+const iconProps = {
+  viewBox: "0 0 24 24",
+  fill: "none",
+  stroke: "currentColor",
+  strokeWidth: 1.8,
+  strokeLinecap: "round" as const,
+  strokeLinejoin: "round" as const,
+};
+
+function ChatIcon({ className = "" }: { className?: string }) {
+  return (
+    <svg {...iconProps} className={className}>
+      <path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z" />
+    </svg>
+  );
+}
+
+function KeyIcon({ className = "" }: { className?: string }) {
+  return (
+    <svg {...iconProps} className={className}>
+      <circle cx="7.5" cy="15.5" r="5.5" />
+      <path d="m21 2-2 2m-7.61 7.61L15.5 7.5m0 0 3 3L22 7l-3-3m-3.5 3.5L19 4" />
+    </svg>
+  );
+}
+
+function SparkIcon({ className = "" }: { className?: string }) {
+  return (
+    <svg {...iconProps} className={className}>
+      <path d="M13 2 3 14h7l-1 8 10-12h-7l1-8z" />
+    </svg>
+  );
+}
+
+function ChevronIcon({ className = "" }: { className?: string }) {
+  return (
+    <svg {...iconProps} className={className}>
+      <path d="m6 9 6 6 6-6" />
+    </svg>
+  );
+}
+
+function SendIcon({ className = "" }: { className?: string }) {
+  return (
+    <svg {...iconProps} className={className}>
+      <path d="M12 19V5" />
+      <path d="m5 12 7-7 7 7" />
+    </svg>
+  );
+}
+
+function WarningIcon({ className = "" }: { className?: string }) {
+  return (
+    <svg {...iconProps} className={className}>
+      <path d="M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z" />
+      <path d="M12 9v4" />
+      <path d="M12 17h.01" />
+    </svg>
+  );
+}
+
+function OrbitLogo({ className = "" }: { className?: string }) {
+  return (
+    <svg width={30} height={30} viewBox="0 0 30 30" fill="none" className={className}>
+      <defs>
+        <linearGradient id="nexusGrad" x1="0" y1="0" x2="30" y2="30" gradientUnits="userSpaceOnUse">
+          <stop stopColor="#A78BFA" />
+          <stop offset="1" stopColor="#60A5FA" />
+        </linearGradient>
+      </defs>
+      <rect x="1.5" y="1.5" width="27" height="27" rx="8.5" fill="url(#nexusGrad)" fillOpacity="0.14" stroke="url(#nexusGrad)" strokeWidth="1.2" />
+      <ellipse cx="15" cy="15" rx="8.4" ry="3.6" stroke="url(#nexusGrad)" strokeWidth="1.4" />
+      <circle cx="15" cy="15" r="2.7" fill="url(#nexusGrad)" />
+      <circle cx="22.4" cy="15" r="1.5" fill="#0B0E14" stroke="url(#nexusGrad)" strokeWidth="1.2" />
+    </svg>
+  );
+}
+
 export default function Home() {
   const [activeTab, setActiveTab] = useState<"chat" | "keys">("chat");
   const [serverUrl, setServerUrl] = useState("http://localhost:8000");
@@ -232,42 +310,61 @@ export default function Home() {
   };
 
   return (
-    <div className="flex h-screen w-screen overflow-hidden bg-[#0B0E14] text-slate-100 font-sans">
+    <div className="flex h-screen w-screen overflow-hidden bg-[#07090D] text-slate-100 font-sans">
       {/* Sidebar */}
-      <aside className="w-64 bg-[#11151D] border-r border-[#242E3D] flex flex-col p-6 flex-shrink-0">
+      <aside className="w-64 bg-white/[0.02] border-r border-white/[0.06] backdrop-blur-xl flex flex-col p-6 flex-shrink-0">
         <div className="flex items-center gap-3 mb-10">
-          <span className="text-3xl">🪐</span>
-          <h1 className="text-xl font-bold bg-gradient-to-r from-blue-500 to-blue-400 bg-clip-text text-transparent">
-            Nexus AI
-          </h1>
+          <div className="relative flex-shrink-0">
+            <div className="absolute -inset-1.5 rounded-2xl bg-gradient-to-br from-violet-500/40 to-blue-500/40 blur-md opacity-60" />
+            <OrbitLogo className="relative" />
+          </div>
+          <div>
+            <h1 className="text-lg font-bold tracking-tight bg-gradient-to-r from-violet-400 via-blue-400 to-cyan-400 bg-clip-text text-transparent">
+              Nexus AI
+            </h1>
+            <p className="text-[10px] uppercase tracking-[0.22em] text-slate-500 mt-0.5">
+              Local LLM Console
+            </p>
+          </div>
         </div>
 
         <nav className="flex flex-col gap-2 flex-grow">
           <button
             onClick={() => setActiveTab("chat")}
-            className={`flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-medium transition-all ${
+            className={`relative flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium transition-all duration-200 ${
               activeTab === "chat"
-                ? "bg-blue-500/10 border border-blue-500 text-blue-400"
-                : "text-slate-400 hover:bg-white/5 hover:text-white"
+                ? "text-white bg-gradient-to-r from-violet-500/[0.16] to-blue-500/[0.08] border border-white/10 shadow-[0_8px_24px_rgba(139,92,246,0.15)]"
+                : "text-slate-400 hover:text-white hover:bg-white/5 border border-transparent"
             }`}
           >
-            <span>💬</span> Chat Console
+            {activeTab === "chat" && (
+              <span className="absolute left-0 top-1/2 -translate-y-1/2 h-6 w-[3px] rounded-r-full bg-gradient-to-b from-violet-400 to-blue-400" />
+            )}
+            <ChatIcon className={`w-[18px] h-[18px] ${activeTab === "chat" ? "text-violet-300" : ""}`} />
+            Chat Console
           </button>
           <button
             onClick={() => setActiveTab("keys")}
-            className={`flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-medium transition-all ${
+            className={`relative flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium transition-all duration-200 ${
               activeTab === "keys"
-                ? "bg-blue-500/10 border border-blue-500 text-blue-400"
-                : "text-slate-400 hover:bg-white/5 hover:text-white"
+                ? "text-white bg-gradient-to-r from-violet-500/[0.16] to-blue-500/[0.08] border border-white/10 shadow-[0_8px_24px_rgba(139,92,246,0.15)]"
+                : "text-slate-400 hover:text-white hover:bg-white/5 border border-transparent"
             }`}
           >
-            <span>🔑</span> API Keys & Dev
+            {activeTab === "keys" && (
+              <span className="absolute left-0 top-1/2 -translate-y-1/2 h-6 w-[3px] rounded-r-full bg-gradient-to-b from-violet-400 to-blue-400" />
+            )}
+            <KeyIcon className={`w-[18px] h-[18px] ${activeTab === "keys" ? "text-violet-300" : ""}`} />
+            API Keys & Dev
           </button>
         </nav>
 
-        <div className="border-t border-[#242E3D] pt-4 mt-auto">
+        <div className="border-t border-white/[0.06] pt-4 mt-auto">
           <div className="flex items-center gap-2 text-xs text-slate-400">
-            <span className="w-2.5 h-2.5 rounded-full bg-emerald-500 shadow-[0_0_8px_#10b981]" />
+            <span className="relative flex w-2.5 h-2.5">
+              <span className="absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-60 animate-ping" />
+              <span className="relative inline-flex w-2.5 h-2.5 rounded-full bg-emerald-400 shadow-[0_0_10px_#34d399]" />
+            </span>
             Status: Active
           </div>
         </div>
@@ -278,8 +375,8 @@ export default function Home() {
         {/* Chat Section */}
         {activeTab === "chat" && (
           <div className="flex-grow flex flex-col h-full overflow-hidden">
-            <header className="h-[70px] border-b border-[#242E3D] flex items-center justify-between px-8 flex-shrink-0">
-              <h2 className="text-lg font-semibold">DeepSeek Chat</h2>
+            <header className="h-[70px] border-b border-white/[0.06] bg-white/[0.02] backdrop-blur-xl flex items-center justify-between px-8 flex-shrink-0">
+              <h2 className="text-lg font-semibold tracking-tight">DeepSeek Chat</h2>
               <div className="flex items-center gap-3">
                 <label className="relative inline-flex items-center cursor-pointer">
                   <input
@@ -288,8 +385,9 @@ export default function Home() {
                     onChange={(e) => setDeepThinkEnabled(e.target.checked)}
                     className="sr-only peer"
                   />
-                  <div className="w-9 h-5 bg-[#242E3D] peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-slate-400 after:border-slate-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-blue-500 peer-checked:after:bg-white"></div>
-                  <span className="ml-2.5 text-xs font-semibold text-slate-400">Deep Think</span>
+                  <div className="w-10 h-[22px] bg-white/[0.08] border border-white/10 rounded-full transition-all duration-300 peer-checked:bg-violet-500/25 peer-checked:border-violet-400/50 peer-checked:shadow-[0_0_12px_rgba(139,92,246,0.4)]"></div>
+                  <div className="absolute top-1/2 -translate-y-1/2 left-[3px] h-4 w-4 rounded-full bg-slate-400 shadow-sm transition-all duration-300 peer-checked:left-[21px] peer-checked:bg-gradient-to-br peer-checked:from-violet-400 peer-checked:to-blue-400 peer-checked:shadow-[0_0_8px_rgba(139,92,246,0.6)]"></div>
+                  <span className="ml-3 text-xs font-semibold text-slate-400">Deep Think</span>
                 </label>
               </div>
             </header>
@@ -298,25 +396,28 @@ export default function Home() {
               {messages.map((msg, idx) => (
                 <div
                   key={idx}
-                  className={`flex flex-col max-w-[85%] rounded-xl px-5 py-4 leading-relaxed text-sm ${
+                  className={`flex flex-col max-w-[85%] rounded-2xl px-5 py-4 leading-relaxed text-sm ${
                     msg.role === "system"
-                      ? "bg-white/5 border border-[#242E3D] max-w-full text-center text-slate-400 self-center"
+                      ? "self-center max-w-full bg-white/[0.04] backdrop-blur border border-white/[0.06] rounded-full px-5 py-2.5 text-center text-xs text-slate-400"
                       : msg.role === "user"
-                      ? "bg-[#181E29] border border-[#242E3D] self-end"
+                      ? "self-end bg-gradient-to-br from-violet-500/[0.16] to-blue-500/[0.08] border border-white/10 backdrop-blur-xl shadow-[0_8px_30px_rgba(0,0,0,0.3)] text-slate-100"
                       : "self-start bg-transparent text-slate-200"
                   }`}
                 >
                   {msg.role === "assistant" && msg.thinking && (
-                    <div
-                      className={`bg-[#1E293B] border-l-4 border-blue-500 rounded-md p-3 mb-3 text-xs text-slate-400 flex flex-col gap-2 w-full transition-all`}
-                    >
-                      <div
+                    <div className="bg-white/[0.03] border border-white/[0.06] border-l-2 border-l-violet-500/70 rounded-xl p-4 mb-3 text-xs text-slate-400 flex flex-col gap-2 w-full transition-all">
+                      <button
                         onClick={() => toggleThought(idx)}
-                        className="flex items-center justify-between cursor-pointer font-semibold text-blue-400 select-none"
+                        className="flex items-center gap-1.5 cursor-pointer font-medium text-violet-300 select-none text-left"
                       >
-                        <span>⚡ Thought process</span>
-                        <span>{collapsedThoughts[idx] ? "▶" : "▼"}</span>
-                      </div>
+                        <SparkIcon className="w-3.5 h-3.5" />
+                        <span>Thought process</span>
+                        <ChevronIcon
+                          className={`w-3.5 h-3.5 ml-1 transition-transform duration-200 ${
+                            collapsedThoughts[idx] ? "-rotate-90" : ""
+                          }`}
+                        />
+                      </button>
                       {!collapsedThoughts[idx] && (
                         <div className="whitespace-pre-wrap font-sans leading-relaxed">
                           {msg.thinking}
@@ -328,18 +429,20 @@ export default function Home() {
                 </div>
               ))}
               {isGenerating && (
-                <div className="self-start text-xs text-slate-400 flex items-center gap-2">
-                  <span className="w-1.5 h-1.5 rounded-full bg-blue-500 animate-bounce" />
-                  <span className="w-1.5 h-1.5 rounded-full bg-blue-500 animate-bounce delay-75" />
-                  <span className="w-1.5 h-1.5 rounded-full bg-blue-500 animate-bounce delay-150" />
-                  Thinking...
+                <div className="self-start text-xs text-slate-400 flex items-center gap-2.5 bg-white/[0.03] border border-white/[0.06] backdrop-blur rounded-full px-3.5 py-2">
+                  <span className="flex gap-1">
+                    <span className="w-1 h-1 rounded-full bg-violet-400 animate-bounce" />
+                    <span className="w-1 h-1 rounded-full bg-blue-400 animate-bounce delay-75" />
+                    <span className="w-1 h-1 rounded-full bg-cyan-400 animate-bounce delay-150" />
+                  </span>
+                  Thinking
                 </div>
               )}
               <div ref={chatEndRef} />
             </div>
 
             <div className="p-8 pt-0 flex-shrink-0">
-              <div className="bg-[#181E29] border border-[#242E3D] rounded-xl px-4 py-3 flex items-center gap-4 shadow-xl">
+              <div className="bg-white/[0.03] border border-white/[0.08] backdrop-blur-xl rounded-2xl px-4 py-3 flex items-end gap-4 shadow-[0_16px_40px_rgba(0,0,0,0.35)] transition-all focus-within:border-violet-400/40 focus-within:ring-1 focus-within:ring-violet-400/20">
                 <textarea
                   value={chatInput}
                   onChange={(e) => setChatInput(e.target.value)}
@@ -351,13 +454,14 @@ export default function Home() {
                   }}
                   placeholder="Message Nexus..."
                   rows={1}
-                  className="bg-transparent border-none outline-none text-slate-100 text-sm flex-grow resize-none max-h-32"
+                  className="bg-transparent border-none outline-none text-slate-100 text-sm flex-grow resize-none max-h-32 placeholder:text-slate-500"
                 />
                 <button
                   onClick={handleSendMessage}
-                  className="bg-blue-500 hover:bg-blue-600 text-white w-9 h-9 rounded-full flex items-center justify-center transition-all active:scale-95 flex-shrink-0"
+                  disabled={!chatInput.trim() || isGenerating}
+                  className="bg-gradient-to-br from-violet-500 to-blue-500 hover:from-violet-400 hover:to-blue-400 text-white w-9 h-9 rounded-full flex items-center justify-center transition-all active:scale-95 flex-shrink-0 shadow-[0_4px_16px_rgba(139,92,246,0.4)] hover:shadow-[0_4px_24px_rgba(139,92,246,0.55)] disabled:opacity-40 disabled:cursor-not-allowed disabled:shadow-none"
                 >
-                  ➔
+                  <SendIcon className="w-4 h-4" />
                 </button>
               </div>
             </div>
@@ -367,22 +471,22 @@ export default function Home() {
         {/* API Keys / Developer Section */}
         {activeTab === "keys" && (
           <div className="flex-grow flex flex-col h-full overflow-y-auto p-8 gap-8">
-            <header className="border-b border-[#242E3D] pb-4">
-              <h2 className="text-xl font-bold">Developer Console</h2>
-              <p className="text-xs text-slate-400 mt-1">Configure your server and manage API authorization keys.</p>
+            <header className="border-b border-white/[0.06] pb-5 flex-shrink-0">
+              <h2 className="text-xl font-bold tracking-tight">Developer Console</h2>
+              <p className="text-xs text-slate-500 mt-1">Configure your server and manage API authorization keys.</p>
             </header>
 
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
               {/* Server config & Key Generator */}
-              <div className="bg-[#181E29] border border-[#242E3D] rounded-xl p-6 flex flex-col gap-6">
+              <div className="bg-white/[0.03] border border-white/[0.08] backdrop-blur-xl rounded-2xl p-6 flex flex-col gap-6">
                 <div>
-                  <h3 className="font-bold text-sm">Server Settings</h3>
-                  <p className="text-xs text-slate-400 mt-1">Target Nexus Server URI and master admin keys.</p>
+                  <h3 className="font-semibold text-sm tracking-tight">Server Settings</h3>
+                  <p className="text-xs text-slate-500 mt-1">Target Nexus Server URI and master admin keys.</p>
                 </div>
 
                 <div className="flex flex-col gap-4">
                   <div className="flex flex-col gap-1.5">
-                    <label className="text-xs font-semibold text-slate-400">Server Endpoint</label>
+                    <label className="text-[11px] font-semibold uppercase tracking-wider text-slate-400">Server Endpoint</label>
                     <input
                       type="text"
                       value={serverUrl}
@@ -390,12 +494,12 @@ export default function Home() {
                         setServerUrl(e.target.value);
                         saveConfig(adminKey, e.target.value);
                       }}
-                      className="bg-[#0B0E14] border border-[#242E3D] rounded-md px-3 py-2 text-sm text-slate-200 outline-none focus:border-blue-500"
+                      className="bg-[#07090D]/60 border border-white/[0.08] rounded-lg px-3 py-2 text-sm text-slate-200 outline-none focus:border-violet-400/50 focus:ring-1 focus:ring-violet-400/20 transition-all"
                     />
                   </div>
 
                   <div className="flex flex-col gap-1.5">
-                    <label className="text-xs font-semibold text-blue-400">Admin Key (NEXUS_ADMIN_KEY)</label>
+                    <label className="text-[11px] font-semibold uppercase tracking-wider text-violet-300">Admin Key (NEXUS_ADMIN_KEY)</label>
                     <input
                       type="password"
                       placeholder="Enter admin secret..."
@@ -404,55 +508,56 @@ export default function Home() {
                         setAdminKey(e.target.value);
                         saveConfig(e.target.value, serverUrl);
                       }}
-                      className="bg-[#0B0E14] border border-[#242E3D] rounded-md px-3 py-2 text-sm text-slate-200 outline-none focus:border-blue-500"
+                      className="bg-[#07090D]/60 border border-white/[0.08] rounded-lg px-3 py-2 text-sm text-slate-200 outline-none focus:border-violet-400/50 focus:ring-1 focus:ring-violet-400/20 transition-all placeholder:text-slate-600"
                     />
                   </div>
                 </div>
 
-                <div className="border-t border-[#242E3D] pt-6 flex flex-col gap-4">
+                <div className="border-t border-white/[0.06] pt-6 flex flex-col gap-4">
                   <div>
-                    <h3 className="font-bold text-sm">Generate API Key</h3>
-                    <p className="text-xs text-slate-400 mt-1">Create a user token to query LLM routes.</p>
+                    <h3 className="font-semibold text-sm tracking-tight">Generate API Key</h3>
+                    <p className="text-xs text-slate-500 mt-1">Create a user token to query LLM routes.</p>
                   </div>
 
                   <form onSubmit={handleGenerateKey} className="flex flex-col gap-4">
                     <div className="flex flex-col gap-1.5">
-                      <label className="text-xs font-semibold text-slate-400">Key Name</label>
+                      <label className="text-[11px] font-semibold uppercase tracking-wider text-slate-400">Key Name</label>
                       <input
                         type="text"
                         placeholder="e.g. backend-agent"
                         value={keyName}
                         onChange={(e) => setKeyName(e.target.value)}
-                        className="bg-[#0B0E14] border border-[#242E3D] rounded-md px-3 py-2 text-sm text-slate-200 outline-none focus:border-blue-500"
+                        className="bg-[#07090D]/60 border border-white/[0.08] rounded-lg px-3 py-2 text-sm text-slate-200 outline-none focus:border-violet-400/50 focus:ring-1 focus:ring-violet-400/20 transition-all placeholder:text-slate-600"
                       />
                     </div>
                     <button
                       type="submit"
-                      className="bg-blue-500 hover:bg-blue-600 px-4 py-2.5 rounded-md text-xs font-semibold text-white self-start transition-all"
+                      className="bg-gradient-to-r from-violet-500 to-blue-500 hover:from-violet-400 hover:to-blue-400 px-4 py-2.5 rounded-lg text-xs font-semibold text-white self-start transition-all shadow-[0_4px_16px_rgba(139,92,246,0.35)] hover:shadow-[0_4px_24px_rgba(139,92,246,0.5)] active:scale-95"
                     >
                       Create Key
                     </button>
                   </form>
 
                   {newKey && (
-                    <div className="bg-[#10B981]/5 border border-dashed border-[#10B981] rounded-lg p-4 flex flex-col gap-2 mt-2">
-                      <span className="text-xs font-semibold text-emerald-400">Your New Token:</span>
+                    <div className="bg-emerald-400/[0.05] border border-dashed border-emerald-400/40 rounded-xl p-4 flex flex-col gap-2 mt-2">
+                      <span className="text-xs font-semibold text-emerald-300">Your New Token</span>
                       <div className="flex gap-2">
                         <input
                           type="text"
                           readOnly
                           value={newKey}
-                          className="bg-[#0B0E14] border border-[#242E3D] rounded-md px-3 py-1.5 text-xs text-slate-200 outline-none flex-grow font-mono"
+                          className="bg-[#07090D]/60 border border-white/[0.08] rounded-lg px-3 py-1.5 text-xs text-slate-200 outline-none flex-grow font-mono"
                         />
                         <button
                           onClick={() => copyToClipboard(newKey)}
-                          className="bg-[#242E3D] hover:bg-white/5 px-3 py-1.5 rounded-md text-xs text-slate-300 transition-all"
+                          className="bg-white/[0.06] hover:bg-white/[0.1] border border-white/[0.08] px-3 py-1.5 rounded-lg text-xs text-slate-300 transition-all"
                         >
                           Copy
                         </button>
                       </div>
-                      <span className="text-[10px] text-rose-400">
-                        ⚠️ Copy this key now! You won't be able to access it again.
+                      <span className="text-[10px] text-amber-300/90 flex items-center gap-1.5">
+                        <WarningIcon className="w-3 h-3 flex-shrink-0" />
+                        Copy this key now. It won't be shown again.
                       </span>
                     </div>
                   )}
@@ -460,21 +565,21 @@ export default function Home() {
               </div>
 
               {/* Integration Guides */}
-              <div className="bg-[#181E29] border border-[#242E3D] rounded-xl p-6 flex flex-col gap-6">
+              <div className="bg-white/[0.03] border border-white/[0.08] backdrop-blur-xl rounded-2xl p-6 flex flex-col gap-6">
                 <div>
-                  <h3 className="font-bold text-sm">Quick Integration</h3>
-                  <p className="text-xs text-slate-400 mt-1">Connect your code using generated keys.</p>
+                  <h3 className="font-semibold text-sm tracking-tight">Quick Integration</h3>
+                  <p className="text-xs text-slate-500 mt-1">Connect your code using generated keys.</p>
                 </div>
 
-                <div className="flex gap-1 border-b border-[#242E3D]">
+                <div className="flex gap-1 border-b border-white/[0.06]">
                   {["curl", "python", "nodejs"].map((tab) => (
                     <button
                       key={tab}
                       onClick={() => setCodeTab(tab as any)}
-                      className={`px-4 py-2 text-xs font-semibold uppercase tracking-wider transition-all border-b-2 ${
+                      className={`px-4 py-2 text-[11px] font-semibold uppercase tracking-wider transition-all border-b-2 ${
                         codeTab === tab
-                          ? "border-blue-500 text-blue-400"
-                          : "border-transparent text-slate-400 hover:text-slate-200"
+                          ? "border-violet-400/70 text-violet-300"
+                          : "border-transparent text-slate-500 hover:text-slate-200"
                       }`}
                     >
                       {tab}
@@ -482,21 +587,27 @@ export default function Home() {
                   ))}
                 </div>
 
-                <div className="bg-[#0F172A] border border-[#242E3D] rounded-lg p-4 font-mono text-xs overflow-x-auto leading-relaxed text-slate-300">
-                  {codeTab === "curl" && (
-                    <pre>
-                      <code>{`curl -X POST ${serverUrl}/chat \\
+                <div className="bg-[#07090D]/80 border border-white/[0.06] rounded-xl overflow-hidden">
+                  <div className="flex items-center gap-1.5 px-4 py-2.5 border-b border-white/[0.06] bg-white/[0.02]">
+                    <span className="w-2.5 h-2.5 rounded-full bg-rose-400/70" />
+                    <span className="w-2.5 h-2.5 rounded-full bg-amber-400/70" />
+                    <span className="w-2.5 h-2.5 rounded-full bg-emerald-400/70" />
+                    <span className="ml-2 text-[10px] uppercase tracking-widest text-slate-500 font-mono">
+                      {codeTab}
+                    </span>
+                  </div>
+                  <pre className="p-4 font-mono text-xs overflow-x-auto leading-relaxed text-slate-300">
+                    <code>
+                      {codeTab === "curl" &&
+                        `curl -X POST ${serverUrl}/chat \\
   -H "X-API-Key: YOUR_API_KEY" \\
   -H "Content-Type: application/json" \\
   -d '{
     "message": "Hello Nexus!",
     "thinking": true
-  }'`}</code>
-                    </pre>
-                  )}
-                  {codeTab === "python" && (
-                    <pre>
-                      <code>{`import requests
+  }'`}
+                      {codeTab === "python" &&
+                        `import requests
 
 headers = {
     "X-API-Key": "YOUR_API_KEY",
@@ -513,12 +624,9 @@ response = requests.post(
     json=data, 
     headers=headers
 )
-print(response.json()["response"])`}</code>
-                    </pre>
-                  )}
-                  {codeTab === "nodejs" && (
-                    <pre>
-                      <code>{`const response = await fetch("${serverUrl}/chat", {
+print(response.json()["response"])`}
+                      {codeTab === "nodejs" &&
+                        `const response = await fetch("${serverUrl}/chat", {
   method: "POST",
   headers: {
     "X-API-Key": "YOUR_API_KEY",
@@ -531,28 +639,28 @@ print(response.json()["response"])`}</code>
 });
 
 const data = await response.json();
-console.log(data.response);`}</code>
-                    </pre>
-                  )}
+console.log(data.response);`}
+                    </code>
+                  </pre>
                 </div>
               </div>
             </div>
 
             {/* Keys Table */}
-            <div className="bg-[#181E29] border border-[#242E3D] rounded-xl p-6">
+            <div className="bg-white/[0.03] border border-white/[0.08] backdrop-blur-xl rounded-2xl p-6">
               <div className="mb-4">
-                <h3 className="font-bold text-sm">Active API Keys</h3>
-                <p className="text-xs text-slate-400 mt-1">Authorized tokens recorded in the database.</p>
+                <h3 className="font-semibold text-sm tracking-tight">Active API Keys</h3>
+                <p className="text-xs text-slate-500 mt-1">Authorized tokens recorded in the database.</p>
               </div>
 
               <div className="overflow-x-auto">
                 <table className="w-full text-left border-collapse text-xs">
                   <thead>
-                    <tr className="border-b border-[#242E3D] text-slate-400">
-                      <th className="py-3 px-4 font-semibold">Name</th>
-                      <th className="py-3 px-4 font-semibold">Token Preview</th>
-                      <th className="py-3 px-4 font-semibold">Created At</th>
-                      <th className="py-3 px-4 font-semibold text-right">Actions</th>
+                    <tr className="border-b border-white/[0.08] text-slate-500">
+                      <th className="py-3 px-4 font-semibold text-[10px] uppercase tracking-wider">Name</th>
+                      <th className="py-3 px-4 font-semibold text-[10px] uppercase tracking-wider">Token Preview</th>
+                      <th className="py-3 px-4 font-semibold text-[10px] uppercase tracking-wider">Created At</th>
+                      <th className="py-3 px-4 font-semibold text-[10px] uppercase tracking-wider text-right">Actions</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -564,7 +672,7 @@ console.log(data.response);`}</code>
                       </tr>
                     ) : (
                       keysList.map((item, idx) => (
-                        <tr key={idx} className="border-b border-[#242E3D] hover:bg-white/[0.01]">
+                        <tr key={idx} className="border-b border-white/[0.05] hover:bg-white/[0.02] transition-colors">
                           <td className="py-4 px-4 font-semibold text-slate-200">{item.name}</td>
                           <td className="py-4 px-4 font-mono text-slate-400">
                             {item.key.substring(0, 12)}...{item.key.substring(item.key.length - 4)}
@@ -574,11 +682,11 @@ console.log(data.response);`}</code>
                           </td>
                           <td className="py-4 px-4 text-right">
                             {item.status === "revoked" ? (
-                              <span className="text-rose-500 font-semibold pr-2">Revoked</span>
+                              <span className="text-rose-400 font-semibold pr-2 text-[10px] uppercase tracking-wider">Revoked</span>
                             ) : (
                               <button
                                 onClick={() => handleRevokeKey(item.key)}
-                                className="border border-rose-500/30 text-rose-500 hover:bg-rose-500 hover:text-white px-3 py-1.5 rounded transition-all font-semibold"
+                                className="border border-rose-400/30 text-rose-400 hover:bg-rose-400 hover:text-white px-3 py-1.5 rounded-lg transition-all font-semibold text-[11px]"
                               >
                                 Revoke
                               </button>
