@@ -34,10 +34,11 @@ Thought/Action/Observation loop that interleaves reasoning with tool use:
 Input: "Calculate 15! and tell me the result"
 
 Thought: I need to compute 15 factorial. I can use Python code execution.
-Action: execute_python({"code": "import math\nprint(math.factorial(15))"})
+Action: python_repl
+Action Input: {"code": "import math\nprint(math.factorial(15))"}
 Observation: 1307674368000
 Thought: The factorial of 15 is 1307674368000. I can now answer.
-Action: answer({"answer": "15! = 1,307,674,368,000"})
+Final Answer: 15! = 1,307,674,368,000
 ```
 
 ### Function Calling (`function_calling.py`)
@@ -45,7 +46,7 @@ Structured protocol for tool invocation:
 
 ```
 <function_call>
-{"name": "execute_python", "args": {"code": "print(sum(range(100)))"}}
+{"name": "python_repl", "args": {"code": "print(sum(range(100)))"}}
 </function_call>
 ```
 
@@ -54,17 +55,18 @@ Built-in tool set:
 
 | Tool | Description |
 |------|-------------|
-| `web_search` | Search the web via DuckDuckGo/SERP API |
-| `execute_python` | Run Python in sandbox |
-| `calculate` | Safe arithmetic evaluation |
-| `datetime_now` | Get current date/time |
-| `file_search` | Search files on filesystem |
+| `search_web` | Search the web via DuckDuckGo instant answer API |
+| `python_repl` | Run Python in sandbox |
+| `calculator` | Safe arithmetic evaluation |
+| `current_datetime` | Get current date/time |
 
 ### Planner (`planner.py`)
-Breaks complex tasks into sequential sub-tasks:
+Breaks complex tasks into sequential sub-steps:
 
 ```python
-planner = Planner(engine, tokenizer)
+from src.agents import TaskPlanner, StepExecutor
+
+planner = TaskPlanner(engine, tokenizer)
 plan = planner.plan("Research the population of Tokyo, then write a summary")
 # Returns: [
 #   "Search: Tokyo population 2024",
@@ -88,65 +90,150 @@ Orchestrator handles:
 4. Final synthesis
 
 ### Memory (`memory.py`)
-Maintains conversation history with automatic summarization:
+Maintains conversation history with an optional summarizer and recent-window trimming:
 
 ```python
-memory = Memory(max_tokens=8192)
+from src.agents.memory import ConversationMemory
+
+memory = ConversationMemory(max_tokens=8192)
 
 # Add turns
 memory.add("user", "What's the capital of France?")
 memory.add("assistant", "Paris.")
 
-# Summarize long history
-summary = memory.summarize()
-print(summary)  # "User asked about France's capital. Answer: Paris."
-
-# Get context for LLM
+# Get context for LLM (recent window, prepends summary if set)
 context = memory.get_context()
+
+# Reset the conversation
+memory.clear()
+```
+
+An optional `summarizer` callable can be supplied to compress older history into a
+system-prompt summary included in `get_context()`.
+
+### Web Crawler (`web_crawler.py`)
+Asynchronous web crawler that fetches pages, extracts text/links, and crawls DuckDuckGo search results with concurrency + rate limiting:
+
+```python
+import asyncio
+from src.agents.web_crawler import CrawlTask, WebCrawler
+
+crawler = WebCrawler(
+    base_url=None,        # Restrict to a domain when set
+    max_concurrent=5,     # Parallel page fetches
+    rate_limit_delay=0.5, # Delay between requests
+)
+
+async def main():
+    # Crawl a single task with depth limit
+    result = await crawler.crawl(CrawlTask(url="https://example.com", max_depth=2))
+    print(result.title, result.content[:500])
+
+    # Crawl a batch of URLs
+    results = await crawler.crawl_batch(
+        ["https://example.com/a", "https://example.com/b"], max_depth=1
+    )
+
+    # Crawl top search results for a query
+    results = await crawler.crawl_search_results("Nexus LLM", num_results=5)
+
+    # Continuous re-crawl on an interval
+    async for batch in crawler.continuous_crawl(
+        ["https://example.com"], interval_seconds=300, max_depth=1
+    ):
+        print(f"Fetched {len(batch)} pages")
+
+asyncio.run(main())
+```
+
+Key features:
+- Visited-URL deduplication + same-domain restriction via `base_url`
+- Async worker pool bounded by `max_concurrent` with `rate_limit_delay`
+- HTML → text extraction via BeautifulSoup, link normalization
+- `crawl_search_results` seeds crawls from DuckDuckGo HTML results
+
+### Crawl Scheduler (`crawl_scheduler.py`)
+Schedules periodic crawling of seed URLs and triggers callbacks with results:
+
+```python
+import asyncio
+from src.agents.crawl_scheduler import CrawlScheduler
+from src.agents.web_crawler import WebCrawler
+
+scheduler = CrawlScheduler(crawler=WebCrawler())
+
+def on_crawl(results):
+    for r in results:
+        print(f"Crawled {r.url} ({r.status_code})")
+
+scheduler.set_on_crawl_callback(on_crawl)
+task_id = scheduler.schedule_crawl(
+    seed_urls=["https://example.com"],
+    interval_seconds=3600,
+    max_depth=1,
+    task_name="Daily docs refresh",
+)
+
+async def main():
+    await scheduler.start()  # Runs until scheduler.stop()
+
+asyncio.run(main())
+
+# Inspect scheduled task status
+print(scheduler.get_status())
 ```
 
 ## Usage
 
 ### Full Agent
 ```python
-from src.agents import AgentOrchestrator, get_default_tools
+from src.agents import AgentOrchestrator, create_orchestrator, get_function_map
 from src.inference.engine import InferenceEngine
 
 engine = InferenceEngine(model, tokenizer)
-tools = get_default_tools()  # web_search, execute_python, calculate, datetime
-orchestrator = AgentOrchestrator(
-    engine, tools,
-    max_steps=10,      # Max ReAct steps
-    max_history=8000,  # Context window per step
-)
+tools = get_function_map()  # search_web, python_repl, calculator, current_datetime
+
+# Option 1: helper that wires default tools
+orchestrator = create_orchestrator(engine)
+
+# Option 2: explicit construction with custom tool map
+orchestrator = AgentOrchestrator(engine, tools, max_iterations=10)
 
 result = orchestrator.run("What was the weather in Tokyo yesterday?")
+print(result["final_answer"])
 ```
 
 ### Standalone ReAct
 ```python
 from src.agents.react import ReActAgent
+from src.agents.tools import get_function_map
 
-agent = ReActAgent(engine, tools)
-replies = agent.run("Calculate sqrt(144) + sqrt(81)")
-for reply in replies:
-    if reply.type == "thought":
-        print(f"🤔 {reply.content}")
-    elif reply.type == "action":
-        print(f"🛠️ {reply.content}")
-    elif reply.type == "observation":
-        print(f"👁️ {reply.content}")
-    elif reply.type == "answer":
-        print(f"✅ {reply.content}")
+agent = ReActAgent(engine, get_function_map(), max_steps=10)
+answer = agent.run("Calculate sqrt(144) + sqrt(81)")
+print(answer)  # Final answer string (tool-verified)
+
+# Stream intermediate steps
+for event in orchestrator.run_stream("Calculate sqrt(144) + sqrt(81)"):
+    print(event)  # {"type": "plan" | "step_start" | "step_result" | "final", "data": ...}
 ```
 
 ### REST API
+
 ```json
 POST /v1/agent/run
 {
   "task": "Calculate 15! and web search the meaning of life",
   "max_steps": 10
 }
+```
+
+Web crawl endpoints are served by the API server (see [Deployment](deployment.md) for the full list):
+
+```json
+POST /crawl      { "search_query": "Nexus LLM", "max_depth": 1 }
+POST /crawl/schedule  { "seed_urls": ["https://example.com"], "interval_seconds": 3600 }
+GET  /crawl/data ?query=llm&limit=10
+GET  /crawl/status
 ```
 
 ## Configuration
@@ -158,11 +245,20 @@ agent:
   temperature: 0.7
   top_p: 0.9
   tools:
-    - web_search
-    - execute_python
-    - calculate
-    - datetime_now
-    - file_search
+    - search_web
+    - python_repl
+    - calculator
+    - current_datetime
+```
+
+```yaml
+crawler:
+  max_concurrent: 5
+  rate_limit_delay: 0.5
+  user_agent: "NexusCrawler/1.0"
+  scheduler:
+    default_interval_seconds: 300
+    default_max_depth: 1
 ```
 
 ## Best Practices

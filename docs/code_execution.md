@@ -96,18 +96,14 @@ Response:
 ```
 
 ### Agent Integration
-The code executor is registered as a tool in the agent system:
+The code executor can be registered as a tool in the agent system:
 
 ```python
-from src.agents.orchestrator import AgentOrchestrator
+from src.agents.orchestrator import create_orchestrator
 from src.agents.code_executor import CodeExecutor
-from src.agents.tools import get_function_map
 
 executor = CodeExecutor()
-tools = get_function_map()
-tools["execute_python"] = executor.execute
-
-orchestrator = AgentOrchestrator(engine, tools)
+orchestrator = create_orchestrator(engine, extra_tools={"execute_python": executor.execute})
 result = orchestrator.run("Calculate 15! using Python")
 ```
 

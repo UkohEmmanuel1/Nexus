@@ -41,10 +41,6 @@ nexus --model checkpoints/model.pt --tokenizer tokenizer/tokenizer.model --think
 
 # API server
 nexus --serve --api-key sk-your-key
-
-# Or install globally via npm
-cd packages/nexus && npm link
-nexus --model checkpoints/model.pt
 ```
 
 ---
@@ -105,15 +101,14 @@ nexus --model checkpoints/model.pt
 | [Thinking Mode](docs/thinking_mode.md) | Developers | Thinking tokens, budget, Deep Think algorithm |
 | [Multimodal](docs/multimodal.md) | Practitioners | Vision encoder, image processing, inference |
 | [Code Execution](docs/code_execution.md) | Developers | Sandbox, security, allowed imports, API |
-| [Agents](docs/agents.md) | AI Engineers | Planner, orchestrator, tools, search grounding |
+| [Agents](docs/agents.md) | AI Engineers | Planner, orchestrator, tools, search grounding, web crawler |
 | [Structured Output](docs/structured_output.md) | API Users | JSON mode, schema constraint, retry logic |
 | [Training Guide](docs/training.md) | ML Engineers | Pretraining, FSDP, DeepSpeed, multi-node |
 | [Fine-tuning Guide](docs/finetuning.md) | Practitioners | SFT, LoRA, QLoRA, DPO, thinking-aware SFT |
-| [Inference Guide](docs/inference.md) | Developers | CLI, API, streaming, quantization, export |
-| [API Reference](docs/api_reference.md) | All Developers | CLI flags, REST endpoints, Python API |
-| [Deployment](docs/deployment.md) | DevOps | Docker, K8s, scaling, monitoring |
-| [Scaling Strategy](docs/scaling.md) | Architects | 1B → 70B+ roadmap, parallelism, hardware |
-| [Research Notes](docs/research_notes.md) | Researchers | Design decisions, ablations, future work |
+| [Inference Guide](docs/inference.md) | Developers | CLI, API, streaming, quantization, web crawl endpoints |
+| [Deployment](docs/deployment.md) | DevOps | Docker, K8s, scaling, monitoring, API keys |
+| [Data Pipeline](docs/data_pipeline.md) | Engineers | Dataset discovery, download, tokenization |
+| [Evaluation](docs/evaluation.md) | Researchers | Benchmarks, metrics, long-context evaluation |
 | [Contributing](docs/contributing.md) | Contributors | Setup, PR workflow, code standards |
 
 ---

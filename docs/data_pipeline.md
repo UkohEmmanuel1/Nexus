@@ -70,6 +70,18 @@ python -m src.data.tokenize_dataset \
     --format text
 ```
 
+### Asset Downloads (`src/data/download_data.py`)
+
+Downloads a compatible SentencePiece `tokenizer.model` (TinyLlama) and a sample training corpus (TinyShakespeare) to bootstrap a fresh checkout:
+
+```bash
+python -m src.data.download_data
+
+# Creates:
+#   tokenizer/tokenizer.model
+#   data/corpus.txt
+```
+
 Output structure:
 ```
 data/tokenized/

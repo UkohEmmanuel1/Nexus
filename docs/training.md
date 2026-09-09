@@ -38,6 +38,30 @@ trainer = Trainer(
 trainer.train(train_dataloader, eval_dataloader)
 ```
 
+## Dataset Loader (`src/training/dataset.py`)
+
+Loads tokenized `.pt` shards into a `DataLoader` for pretraining. Each shard should contain an `input_ids` key (single sequence or batch) and optionally `labels`.
+
+```python
+from src.training.dataset import TokenizedDataset, build_train_loader, load_shard_paths
+
+# List shard paths
+paths = load_shard_paths("data/tokenized/train")   # sorted *.pt glob
+
+# Build a ready-to-use train loader
+train_loader = build_train_loader(
+    shard_dir="data/tokenized/train",
+    batch_size=8,
+    shuffle=True,
+    num_workers=4,
+)
+
+# Or construct the dataset directly
+dataset = TokenizedDataset(paths)
+```
+
+`collate_batch` right-pads each mini-batch to the longest sequence (`pad_id=0`) and sets ignored label positions to `ignore_index=0`.
+
 ## Distributed Training (`src/training/distributed.py`)
 
 ### FSDP (Fully Sharded Data Parallel)

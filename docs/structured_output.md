@@ -1,88 +1,121 @@
 # Structured Output
 
-Generate JSON and list outputs that conform to a user-defined schema, enforcing type constraints and structural rules directly in the sampling loop.
+Generate JSON and list outputs that conform to a user-defined JSON Schema, using schema-guided prompting with retry-based parsing to keep outputs valid.
 
 ## How It Works
 
-Instead of generating free text and parsing (which can produce invalid output), structured output constrains the generation distribution at each token step:
+Structured output guides generation toward valid JSON rather than relying on free-form parsing:
 
-1. A schema defines the desired output structure
-2. During generation, only tokens that produce valid (prefix-valid) output are considered
-3. The probability distribution is masked to exclude invalid tokens
-4. Generation continues until the schema is satisfied
+1. A JSON Schema defines the desired output structure
+2. The schema is appended to the user prompt with explicit formatting instructions
+3. Generation runs through the normal sampling loop (low temperature recommended)
+4. The response is parsed; on failure the call retries up to `max_retries` times
+5. Return the parsed dict/list, or raise if all retries fail
 
 ## Schema Constraint Engine
 
+`structured.py` provides schema-formatted prompting with retry-based parsing:
+
 ```python
-from src.inference.structured import SchemaConstraint, generate_json
+from src.inference.structured import SchemaConstraint, StructuredOutput
+from src.inference.engine import InferenceEngine
 
-# Define a schema
-schema = SchemaConstraint({
-    "name": str,
-    "age": int,
-    "scores": [float],
-    "metadata": {
-        "created": str,
-        "tags": [str],
-    }
-})
+engine = InferenceEngine(model, tokenizer)
 
-# Generate constrained output
-result = generate_json(
-    model, tokenizer, input_ids,
-    schema=schema,
-    max_new_tokens=512,
-    temperature=0.7,
+# Wrap the engine with structured generation
+structured = StructuredOutput(engine)
+
+# Define a JSON Schema (must include a "type" field)
+schema = {
+    "type": "object",
+    "properties": {
+        "name": {"type": "string"},
+        "age": {"type": "integer"},
+        "scores": {"type": "array", "items": {"type": "number"}},
+        "metadata": {
+            "type": "object",
+            "properties": {
+                "created": {"type": "string"},
+                "tags": {"type": "array", "items": {"type": "string"}},
+            },
+        },
+    },
+}
+
+# Generate constrained output (auto-retries on parse failure)
+result = structured.generate(
+    "Extract a profile from: 'Alice, 30, scored 95.5 and 88.0 on finals (Jan 15)'",
+    schema,
+    max_retries=3,
+    temperature=0.2,
 )
-# {"name": "Alice", "age": 30, "scores": [95.5, 88.0], "metadata": {"created": "2024-01-15", "tags": ["exam", "final"]}}
+```
+
+A `SchemaConstraint` object can also be used directly for prompt formatting and parsing:
+
+```python
+constraint = SchemaConstraint(schema)
+prompt = constraint.format_prompt("Extract a profile from the text")
+result = constraint.parse_response(model_output_text)
 ```
 
 ## Supported Types
 
-| Type | Description | Example |
+Schemas follow the JSON Schema vocabulary (the `type` field is required by `SchemaConstraint`):
+
+| JSON Schema type | Description | Example |
 |------|-------------|---------|
-| `str` | String | `"hello"` |
-| `int` | Integer | `42` |
-| `float` | Float | `3.14` |
-| `bool` | Boolean | `true` |
-| `[T]` | List of type T | `[1, 2, 3]` |
-| `{k: T}` | Dict with value type T | `{"a": 1}` |
-| Nested `dict` | Structured object | `{"x": 1, "y": 2}` |
-| `Optional[T]` | Nullable field | `null` or value |
-| `Literal["a"]` | Enum | must match one of values |
+| `string` | String | `{"type": "string"}` |
+| `integer` | Integer | `{"type": "integer"}` |
+| `number` | Float | `{"type": "number"}` |
+| `boolean` | Boolean | `{"type": "boolean"}` |
+| `array` + `items` | List of a type | `{"type": "array", "items": {"type": "integer"}}` |
+| `object` + `properties` | Structured object | `{"type": "object", "properties": {...}}` |
+| Nested `object` | Nested structures | `{"properties": {"user": {"type": "object", ...}}}` |
 
 ## Usage
 
 ### Python API
+
 ```python
-# Simple JSON
-schema = SchemaConstraint({"name": str, "score": int})
-result = generate_json(model, tokenizer, input_ids, schema)
+from src.inference.structured import StructuredOutput
 
-# Nested JSON
-schema = SchemaConstraint({
-    "user": {"id": int, "name": str},
-    "items": [{"product": str, "price": float}],
-})
-result = generate_json(model, tokenizer, input_ids, schema)
+structured = StructuredOutput(engine)
 
-# List output
-result = generate_list(model, tokenizer, input_ids, element_type=int, max_items=5)
-# [1, 2, 3, 4, 5]
-
-# List of objects
-result = generate_list(
-    model, tokenizer, input_ids,
-    element_type={"name": str, "value": float},
-    max_items=3,
+# Convenience: generate_json(prompt, properties, required)
+result = structured.generate_json(
+    "Extract name and score from 'Alice scored 42'",
+    properties={"name": "string", "score": "integer"},
+    required=["name", "score"],
 )
-# [{"name": "a", "value": 1.0}, {"name": "b", "value": 2.0}]
 
-# With streaming
-for chunk in generate_json_stream(
-    model, tokenizer, input_ids, schema
-):
-    print(chunk)
+# Full JSON Schema control (nested structures)
+schema = {
+    "type": "object",
+    "properties": {
+        "user": {"type": "object", "properties": {
+            "id": {"type": "integer"},
+            "name": {"type": "string"},
+        }},
+        "items": {"type": "array", "items": {
+            "type": "object",
+            "properties": {
+                "product": {"type": "string"},
+                "price": {"type": "number"},
+            },
+        }},
+    },
+}
+result = structured.generate(prompt, schema)
+
+# List output (array schema; unwraps the containing list if the model wraps it)
+result = structured.generate_list(
+    prompt,
+    item_schema={"type": "object", "properties": {"name": {"type": "string"}, "value": {"type": "number"}}},
+)
+
+# With streaming / custom generation kwargs
+result = structured.generate(prompt, schema, temperature=0.7, max_new_tokens=1024)
 ```
 
 ### REST API
@@ -112,32 +145,49 @@ POST /v1/chat/completions
 ```
 
 ### Agent Integration
-```python
-from src.agents.orchestrator import AgentOrchestrator
+Combine structured generation with the agent orchestrator's final synthesis step:
 
-result = orchestrator.run_with_schema(
-    "Extract all dates and amounts from this text",
-    output_schema={
-        "transactions": [{"date": str, "amount": float}],
+```python
+from src.agents.orchestrator import create_orchestrator
+from src.inference.structured import StructuredOutput
+
+orchestrator = create_orchestrator(engine)
+structured = StructuredOutput(engine)
+
+# Extract structured data from context retrieved/generated by the agent
+result = orchestrator.run("Summarize the transactions described: 'Bought coffee for $4.50 on Jan 5'")
+schema = {
+    "type": "object",
+    "properties": {
+        "transactions": {
+            "type": "array",
+            "items": {
+                "type": "object",
+                "properties": {"date": {"type": "string"}, "amount": {"type": "number"}},
+            },
+        },
     },
+}
+structured_result = structured.generate(
+    f"Extract transactions from: {result['final_answer']}",
+    schema,
+    max_retries=3,
 )
 ```
 
 ## How Constraint Enforcement Works
 
+`StructuredOutput` uses schema-guided prompting with retry-based parsing:
+
 ```
-1. Parse schema → create state machine
-2. For each generation step:
-   a. Get logits from model
-   b. Compute valid next tokens based on current state:
-      - JSON opening/closing brackets
-      - Valid string terminators
-      - Number vs string continuation
-   c. Mask invalid tokens (set logits to -inf)
-   d. Sample from constrained distribution
-   e. Update parser state
-3. Return when schema is fully matched
+1. Format the user prompt with the JSON Schema appended
+2. Generate with the engine's normal sampling loop
+3. Parse the JSON from the response
+4. On parse failure, retry (up to max_retries) with the same prompt
+5. Return the parsed dict, or raise if all retries fail
 ```
+
+For true token-level constraint (masking invalid tokens at each step of the distribution), the schema-driven generation is combined with lower temperatures and retries to keep outputs valid.
 
 ## Best Practices
 
@@ -151,11 +201,12 @@ result = orchestrator.run_with_schema(
 
 5. **Testing**:
 ```python
-# Validate output against schema
-result_schema = SchemaConstraint({"name": str, "age": int})
-try:
-    result_schema.validate(result)
-    print("Valid")
-except ValueError as e:
-    print(f"Invalid: {e}")
+from src.inference.structured import SchemaConstraint
+
+# Validate a response against a schema
+constraint = SchemaConstraint(
+    {"type": "object", "properties": {"name": {"type": "string"}, "age": {"type": "integer"}}}
+)
+result = constraint.parse_response('{"name": "Alice", "age": 30}')
+assert result == {"name": "Alice", "age": 30}
 ```

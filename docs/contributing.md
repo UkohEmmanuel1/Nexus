@@ -56,26 +56,14 @@ make test
 ### Test Structure
 ```
 tests/
-├── test_config.py
-├── test_rmsnorm.py
-├── test_rope.py
+├── conftest.py
 ├── test_attention.py
-├── test_feedforward.py
-├── test_transformer.py
-├── test_tokenizer.py
-├── test_data_pipeline.py
-├── test_trainer.py
-├── test_distributed.py
-├── test_evaluation.py
-├── test_engine.py
-├── test_cli.py
+├── test_long_context.py
+├── test_model.py
+├── test_new_features.py
 ├── test_server.py
-├── test_quantize.py
-├── test_sft.py
-├── test_lora.py
-├── test_dpo.py
-├── test_phases_ch.py  # New feature tests
-└── prompt_test.py
+├── test_tokenizer.py
+└── test_training.py
 ```
 
 ## Pull Request Process

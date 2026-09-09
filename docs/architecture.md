@@ -8,6 +8,7 @@ Nexus is a decoder-only Transformer language model designed for scalable pretrai
 ┌──────────────────────────────────────────────────────┐
 │                    API Layer                          │
 │  CLI  │  FastAPI  │  vLLM  │  Streaming  │  Batch    │
+│  Web Crawl  │  Crawl Scheduler  │  Key Management    │
 └──────────────────────┬───────────────────────────────┘
                        │
 ┌──────────────────────▼───────────────────────────────┐
@@ -37,6 +38,7 @@ Nexus is a decoder-only Transformer language model designed for scalable pretrai
 │               Agent System                            │
 │  Planner  │  Orchestrator  │  ReAct  │  Tools        │
 │  Code Executor  │  Search Grounding  │  File Search  │
+│  Web Crawler  │  Crawl Scheduler  │  Web Index      │
 └──────────────────────────────────────────────────────┘
 ```
 
@@ -67,12 +69,14 @@ Nexus is a decoder-only Transformer language model designed for scalable pretrai
 |------|---------------|
 | `pipeline.py` | Dataset loading, transforms, train/val/test split |
 | `tokenize_dataset.py` | Tokenization + sequence packing |
+| `download_data.py` | Download tokenizer model and sample corpus |
 
 ### `src/training/` — Training
 | File | Responsibility |
 |------|---------------|
 | `trainer.py` | Training loop, AdamW, cosine LR, checkpointing |
 | `distributed.py` | FSDP wrap, DeepSpeed init, multi-process setup |
+| `dataset.py` | Tokenized shard dataset + collate + dataloader builder |
 | `reasoning_trainer.py` | Thinking-aware loss, PPO-based RL |
 
 ### `src/finetuning/` — Fine-tuning
@@ -90,6 +94,7 @@ Nexus is a decoder-only Transformer language model designed for scalable pretrai
 | `server.py` | FastAPI server, OpenAI-compatible API |
 | `structured.py` | JSON schema-constrained generation |
 | `long_context.py` | 1M+ token chunking and summarization |
+| `multimodal.py` | Image processing and multimodal generation |
 
 ### `src/agents/` — Agent System
 | File | Responsibility |
@@ -102,6 +107,8 @@ Nexus is a decoder-only Transformer language model designed for scalable pretrai
 | `code_executor.py` | Sandboxed subprocess execution |
 | `search_grounding.py` | Web search with result citation |
 | `file_search.py` | Recursive file indexing + content search |
+| `web_crawler.py` | Async web crawling, DuckDuckGo search results |
+| `crawl_scheduler.py` | Periodic scheduled crawling of seed URLs |
 | `memory.py` | Conversation memory with summarization |
 
 ### `src/evaluation/` — Evaluation
@@ -115,6 +122,12 @@ Nexus is a decoder-only Transformer language model designed for scalable pretrai
 | `index.py` | Document index with cosine similarity |
 | `retriever.py` | Query → top-k documents |
 | `generator.py` | Context-augmented generation |
+| `web_index.py` | SQLite-backed index for crawled web pages |
+
+### `src/utils/` — Utilities
+| File | Responsibility |
+|------|---------------|
+| `key_manager.py` | API key generation, validation, and revocation (SQLite-backed) |
 
 ## Data Flow
 
