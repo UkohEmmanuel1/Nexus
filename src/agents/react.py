@@ -60,7 +60,11 @@ class ReActAgent:
                 if action in self.tools:
                     try:
                         action_input = json.loads(action_input_str)
-                        result = self.tools[action](**action_input) if isinstance(action_input, dict) else self.tools[action](action_input)
+                        result = (
+                            self.tools[action](**action_input)
+                            if isinstance(action_input, dict)
+                            else self.tools[action](action_input)
+                        )
                     except Exception as e:
                         result = f"Error: {e}"
                 else:

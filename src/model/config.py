@@ -91,8 +91,14 @@ class ModelConfig:
         total = embed
 
         for _ in range(self.n_layers):
-            attn = (d * self.n_heads * head_dim) + (d * n_kv * head_dim * 2) + (d * d * self.n_heads)
-            ffn_layer = (d * ffn * 3) if not self.moe.enabled else (d * ffn * 3 * self.moe.num_experts + d * self.moe.num_experts)
+            attn = (
+                (d * self.n_heads * head_dim) + (d * n_kv * head_dim * 2) + (d * d * self.n_heads)
+            )
+            ffn_layer = (
+                (d * ffn * 3)
+                if not self.moe.enabled
+                else (d * ffn * 3 * self.moe.num_experts + d * self.moe.num_experts)
+            )
             norms = 4 * d
             total += attn + ffn_layer + norms
 

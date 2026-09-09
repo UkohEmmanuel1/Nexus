@@ -33,8 +33,15 @@ class InferenceEngine:
 
         if stream:
             return self._generate_stream(
-                input_tensor, max_new_tokens, temperature, top_p, top_k,
-                repetition_penalty, stop_strings, thinking_mode, thinking_budget,
+                input_tensor,
+                max_new_tokens,
+                temperature,
+                top_p,
+                top_k,
+                repetition_penalty,
+                stop_strings,
+                thinking_mode,
+                thinking_budget,
             )
 
         if thinking_mode:
@@ -54,8 +61,10 @@ class InferenceEngine:
             think_start = output_text.find("<thinking>")
             think_end = output_text.find("</thinking>")
             if think_start >= 0 and think_end >= 0:
-                thinking_text = output_text[think_start + len("<thinking>"):think_end]
-                clean_text = output_text[:think_start] + output_text[think_end + len("</thinking>"):]
+                thinking_text = output_text[think_start + len("<thinking>") : think_end]
+                clean_text = (
+                    output_text[:think_start] + output_text[think_end + len("</thinking>") :]
+                )
                 return clean_text
 
         output_ids = self.model.generate(
@@ -103,9 +112,13 @@ class InferenceEngine:
 
         for _ in range(total_budget):
             if start_pos == 0:
-                logits, _ = self.model.forward(generated[:, start_pos:], start_pos=0, use_cache=True)
+                logits, _ = self.model.forward(
+                    generated[:, start_pos:], start_pos=0, use_cache=True
+                )
             else:
-                logits, _ = self.model.forward(generated[:, -1:], start_pos=start_pos, use_cache=True)
+                logits, _ = self.model.forward(
+                    generated[:, -1:], start_pos=start_pos, use_cache=True
+                )
 
             next_logits = logits[:, -1, :] / temperature
 
@@ -115,7 +128,9 @@ class InferenceEngine:
 
             if top_p < 1.0:
                 sorted_logits, sorted_indices = torch.sort(next_logits, descending=True, dim=-1)
-                cumulative_probs = torch.cumsum(torch.nn.functional.softmax(sorted_logits, dim=-1), dim=-1)
+                cumulative_probs = torch.cumsum(
+                    torch.nn.functional.softmax(sorted_logits, dim=-1), dim=-1
+                )
                 sorted_indices_to_remove = cumulative_probs > top_p
                 sorted_indices_to_remove[:, 1:] = sorted_indices_to_remove[:, :-1].clone()
                 sorted_indices_to_remove[:, 0] = False
@@ -132,7 +147,10 @@ class InferenceEngine:
 
             if in_thinking:
                 thinking_remaining -= 1
-                if next_token.item() == self.model.config.thinking.end_think_token_id or thinking_remaining <= 0:
+                if (
+                    next_token.item() == self.model.config.thinking.end_think_token_id
+                    or thinking_remaining <= 0
+                ):
                     in_thinking = False
                     yield "\n"
                 continue
@@ -150,7 +168,9 @@ class InferenceEngine:
 
         self.model.reset_kv_cache()
 
-    def deep_think(self, prompt: str, max_new_tokens: int = 512, n_hypotheses: int = 3) -> tuple[str, str]:
+    def deep_think(
+        self, prompt: str, max_new_tokens: int = 512, n_hypotheses: int = 3
+    ) -> tuple[str, str]:
         input_ids = self.tokenizer.encode(prompt, add_bos=True)
         input_tensor = torch.tensor([input_ids], device=self.device)
 

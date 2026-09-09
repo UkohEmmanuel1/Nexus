@@ -1,7 +1,7 @@
-import sqlite3
 import secrets
+import sqlite3
 import time
-from pathlib import Path
+
 
 class KeyManager:
     def __init__(self, db_path: str = "nexus_keys.db"):
@@ -25,7 +25,7 @@ class KeyManager:
         with sqlite3.connect(self.db_path) as conn:
             conn.execute(
                 "INSERT INTO api_keys (key, name, created_at) VALUES (?, ?, ?)",
-                (key, name, time.time())
+                (key, name, time.time()),
             )
             conn.commit()
         return key
@@ -33,18 +33,14 @@ class KeyManager:
     def validate_key(self, key: str) -> bool:
         with sqlite3.connect(self.db_path) as conn:
             cursor = conn.cursor()
-            cursor.execute(
-                "SELECT 1 FROM api_keys WHERE key = ? AND status = 'active'",
-                (key,)
-            )
+            cursor.execute("SELECT 1 FROM api_keys WHERE key = ? AND status = 'active'", (key,))
             return cursor.fetchone() is not None
 
     def revoke_key(self, key: str) -> bool:
         with sqlite3.connect(self.db_path) as conn:
             cursor = conn.cursor()
             cursor.execute(
-                "UPDATE api_keys SET status = 'revoked' WHERE key = ? AND status = 'active'",
-                (key,)
+                "UPDATE api_keys SET status = 'revoked' WHERE key = ? AND status = 'active'", (key,)
             )
             conn.commit()
             return cursor.rowcount > 0

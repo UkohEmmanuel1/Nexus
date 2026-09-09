@@ -1,12 +1,10 @@
-import os
-import time
-import pytest
 from unittest.mock import MagicMock
-from fastapi import FastAPI
+
+import pytest
 from fastapi.testclient import TestClient
 
-from src.utils.key_manager import KeyManager
 from src.inference.server import create_app
+from src.utils.key_manager import KeyManager
 
 
 @pytest.fixture(autouse=True)
@@ -40,20 +38,20 @@ def mock_engine(mock_tokenizer):
 
 def test_key_manager_lifecycle():
     km = KeyManager()
-    
+
     # 1. Validating non-existent key
     assert not km.validate_key("invalid_key")
 
     # 2. Generate key
     key = km.generate_key("test_user")
     assert key.startswith("nexus_sk_")
-    
+
     # 3. Validate generated key
     assert km.validate_key(key)
 
     # 4. Revoke key
     assert km.revoke_key(key)
-    
+
     # 5. Revoking again returns False
     assert not km.revoke_key(key)
 
@@ -84,9 +82,7 @@ def test_server_authentication_and_routes(mock_engine, monkeypatch):
 
     # 3. Access using master api key (Bearer)
     res = client.post(
-        "/chat",
-        json={"message": "hello"},
-        headers={"Authorization": "Bearer master_api_key"}
+        "/chat", json={"message": "hello"}, headers={"Authorization": "Bearer master_api_key"}
     )
     assert res.status_code == 200
     assert res.json()["response"] == "mock output"
@@ -98,9 +94,7 @@ def test_server_authentication_and_routes(mock_engine, monkeypatch):
 
     # 4b. With correct admin key should succeed
     res = client.post(
-        "/v1/keys/generate",
-        json={"name": "developer_1"},
-        headers={"X-API-Key": "admin_api_key"}
+        "/v1/keys/generate", json={"name": "developer_1"}, headers={"X-API-Key": "admin_api_key"}
     )
     assert res.status_code == 200
     generated_data = res.json()
@@ -120,11 +114,7 @@ def test_server_authentication_and_routes(mock_engine, monkeypatch):
     assert any(k["key"] == generated_key for k in keys_list)
 
     # 5. Access protected route with the newly generated key
-    res = client.post(
-        "/chat",
-        json={"message": "hello"},
-        headers={"X-API-Key": generated_key}
-    )
+    res = client.post("/chat", json={"message": "hello"}, headers={"X-API-Key": generated_key})
     assert res.status_code == 200
     assert res.json()["response"] == "mock output"
 
@@ -132,17 +122,13 @@ def test_server_authentication_and_routes(mock_engine, monkeypatch):
     res = client.post(
         "/v1/keys/revoke",
         json={"key": generated_key},
-        headers={"Authorization": "Bearer master_api_key"}
+        headers={"Authorization": "Bearer master_api_key"},
     )
     assert res.status_code == 200
     assert res.json()["status"] == "success"
 
     # 7. Access protected route with the revoked key should fail
-    res = client.post(
-        "/chat",
-        json={"message": "hello"},
-        headers={"X-API-Key": generated_key}
-    )
+    res = client.post("/chat", json={"message": "hello"}, headers={"X-API-Key": generated_key})
     assert res.status_code == 401
 
 

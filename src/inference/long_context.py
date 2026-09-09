@@ -25,7 +25,7 @@ class LongContextProcessor:
         chunk_texts = []
 
         for i in range(0, len(tokens), self.chunk_size):
-            chunk_tokens = tokens[i:i + self.chunk_size]
+            chunk_tokens = tokens[i : i + self.chunk_size]
             chunk_text = self.tokenizer.decode(chunk_tokens)
             chunks.append(torch.tensor([chunk_tokens], device=self.device))
             chunk_texts.append(chunk_text)
@@ -64,9 +64,7 @@ class LongContextProcessor:
 
         return self.tokenizer.decode(output[0].tolist())
 
-    def summarize_long_text(
-        self, text: str, max_length: int = 2048
-    ) -> str:
+    def summarize_long_text(self, text: str, max_length: int = 2048) -> str:
         chunks, _ = self.process_long_input(text)
         summaries = []
 
@@ -86,9 +84,13 @@ class LongContextProcessor:
 
         if len(summaries) > 1:
             combined = "\n".join(summaries)
-            input_ids = self.tokenizer.encode(f"Summarize all:\n\n{combined}\n\nFinal summary:", add_bos=True)
+            input_ids = self.tokenizer.encode(
+                f"Summarize all:\n\n{combined}\n\nFinal summary:", add_bos=True
+            )
             input_tensor = torch.tensor([input_ids], device=self.device)
-            final_ids = self.model.generate(input_tensor, max_new_tokens=max_length, temperature=0.3)
+            final_ids = self.model.generate(
+                input_tensor, max_new_tokens=max_length, temperature=0.3
+            )
             return self.tokenizer.decode(final_ids[0].tolist())
 
         return summaries[0] if summaries else ""

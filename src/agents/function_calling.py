@@ -36,17 +36,21 @@ class FunctionCallingAgent:
 
             name, args = fc_match
             result = self._execute_function(name, args)
-            messages.append({
-                "role": "user",
-                "content": f"<function_result>\n{json.dumps(result, indent=2)}\n</function_result>",
-            })
+            messages.append(
+                {
+                    "role": "user",
+                    "content": f"<function_result>\n{json.dumps(result, indent=2)}\n</function_result>",  # noqa: E501
+                }
+            )
 
         return "Max turns reached."
 
     def _build_system_prompt(self) -> str:
         func_descs = []
         for f in self.functions:
-            func_descs.append(f"{f['name']}: {f['description']}\nParams: {json.dumps(f.get('parameters', {}))}")
+            func_descs.append(
+                f"{f['name']}: {f['description']}\nParams: {json.dumps(f.get('parameters', {}))}"
+            )
         return (
             "You have access to the following functions. To call a function, "
             "respond with <function_call>name\njson_args</function_call>.\n\n"
@@ -55,6 +59,7 @@ class FunctionCallingAgent:
 
     def _extract_function_call(self, text: str) -> tuple[str, dict] | None:
         import re
+
         match = re.search(r"<function_call>(.*?)\n(.*?)</function_call>", text, re.DOTALL)
         if match:
             name = match.group(1).strip()

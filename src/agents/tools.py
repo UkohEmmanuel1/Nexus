@@ -27,6 +27,7 @@ def python_repl(code: str) -> dict[str, Any]:
 def search_web(query: str) -> dict[str, Any]:
     try:
         import requests
+
         response = requests.get(
             f"https://api.duckduckgo.com/?q={query}&format=json",
             timeout=10,

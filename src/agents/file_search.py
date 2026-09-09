@@ -13,7 +13,17 @@ class FileSearch:
     def index_directory(self, path: str | None = None, patterns: list[str] = None):
         search_path = Path(path) if path else self.root_path
         if patterns is None:
-            patterns = ["*.py", "*.js", "*.ts", "*.md", "*.txt", "*.yaml", "*.json", "*.html", "*.css"]
+            patterns = [
+                "*.py",
+                "*.js",
+                "*.ts",
+                "*.md",
+                "*.txt",
+                "*.yaml",
+                "*.json",
+                "*.html",
+                "*.css",
+            ]
 
         self.index = {}
         for pattern in patterns:
@@ -38,17 +48,21 @@ class FileSearch:
             for i, line in enumerate(lines, 1):
                 if query_lower in line.lower():
                     score += 1
-                    matches.append({
-                        "line": i,
-                        "content": line.strip()[:200],
-                    })
+                    matches.append(
+                        {
+                            "line": i,
+                            "content": line.strip()[:200],
+                        }
+                    )
 
             if score > 0:
-                results.append({
-                    "file": filepath,
-                    "score": score,
-                    "matches": matches[:5],
-                })
+                results.append(
+                    {
+                        "file": filepath,
+                        "score": score,
+                        "matches": matches[:5],
+                    }
+                )
 
         results.sort(key=lambda x: -x["score"])
         return results[:max_results]

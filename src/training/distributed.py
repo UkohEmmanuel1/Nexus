@@ -18,8 +18,8 @@ def setup_distributed(backend: str = "nccl"):
 
         dist.init_process_group(backend=backend)
         torch.cuda.set_device(local_rank)
-        logger.info(
-            f"Distributed initialized: rank={rank}, world_size={world_size}, local_rank={local_rank}"
+        logger.info(  # noqa: E501
+            f"Distributed initialized: rank={rank}, world_size={world_size}, local_rank={local_rank}"  # noqa: E501
         )
         return True
     return False
@@ -62,6 +62,7 @@ def wrap_fsdp(model: torch.nn.Module, **kwargs):
 
 def wrap_deepspeed(model: torch.nn.Module, config_path: str):
     import deepspeed
+
     model_engine, optimizer, _, _ = deepspeed.initialize(
         model=model,
         config=config_path,

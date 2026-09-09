@@ -1,4 +1,3 @@
-
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
@@ -26,9 +25,7 @@ class VisionEncoder(nn.Module):
             3, vit_dim, kernel_size=patch_size, stride=patch_size, bias=False
         )
         self.cls_token = nn.Parameter(torch.randn(1, 1, vit_dim))
-        self.pos_embed = nn.Parameter(
-            torch.randn(1, self.num_patches + 1, vit_dim) * 0.02
-        )
+        self.pos_embed = nn.Parameter(torch.randn(1, self.num_patches + 1, vit_dim) * 0.02)
 
         encoder_layer = nn.TransformerEncoderLayer(
             d_model=vit_dim,
@@ -68,7 +65,7 @@ class VisionEncoder(nn.Module):
 
         queries = self.query_tokens.expand(batch_size, -1, -1)
         attn_weights = torch.matmul(queries, x.transpose(1, 2))
-        attn_weights = F.softmax(attn_weights / (self.vit_dim ** 0.5), dim=-1)
+        attn_weights = F.softmax(attn_weights / (self.vit_dim**0.5), dim=-1)
         x_pooled = torch.matmul(attn_weights, x)
 
         projected = self.projector(x_pooled)
@@ -84,9 +81,7 @@ class MultimodalProjector(nn.Module):
     def __init__(self, vision_dim: int, llm_dim: int, num_queries: int = 32):
         super().__init__()
         self.queries = nn.Parameter(torch.randn(1, num_queries, vision_dim) * 0.02)
-        self.cross_attn = nn.MultiheadAttention(
-            vision_dim, num_heads=8, batch_first=True
-        )
+        self.cross_attn = nn.MultiheadAttention(vision_dim, num_heads=8, batch_first=True)
         self.linear = nn.Linear(vision_dim, llm_dim)
 
     def forward(self, vision_features: torch.Tensor) -> torch.Tensor:

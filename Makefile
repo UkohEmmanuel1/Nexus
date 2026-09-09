@@ -1,4 +1,4 @@
-.PHONY: install dev test lint format clean train eval chat server docker precommit
+.PHONY: install dev test lint format clean train eval chat server docker precommit crawl crawl-schedule crawl-stop crawl-status
 
 install:
 	pip install -e ".[all]"
@@ -30,6 +30,18 @@ server:
 
 tokenizer-train:
 	python -m src.tokenizer.train --input data/corpus.txt --model-prefix tokenizer/tokenizer --vocab-size 128000
+
+crawl:
+	python -c "import requests; r=requests.post('http://localhost:8000/crawl', json={'query': 'test'}); print(r.json())"
+
+crawl-schedule:
+	python -c "import requests; r=requests.post('http://localhost:8000/crawl/schedule', json={'query': 'test', 'interval': 3600}); print(r.json())"
+
+crawl-stop:
+	python -c "import requests; r=requests.post('http://localhost:8000/crawl/stop'); print(r.json())"
+
+crawl-status:
+	python -c "import requests; r=requests.get('http://localhost:8000/crawl/status'); print(r.json())"
 
 docker-build:
 	docker build -t opencode-llm:latest -f docker/Dockerfile .

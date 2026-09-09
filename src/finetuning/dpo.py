@@ -18,7 +18,13 @@ class DPOConfig:
 
 
 class DPOTrainer(Trainer):
-    def __init__(self, model: nn.Module, ref_model: nn.Module, config: dict, dpo_config: DPOConfig | None = None):
+    def __init__(
+        self,
+        model: nn.Module,
+        ref_model: nn.Module,
+        config: dict,
+        dpo_config: DPOConfig | None = None,
+    ):
         super().__init__(model, config)
         self.ref_model = ref_model
         self.ref_model.to(self.device)

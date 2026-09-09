@@ -1,5 +1,3 @@
-
-
 class ConversationMemory:
     def __init__(self, max_tokens: int = 4096, summarizer=None):
         self.messages: list[dict[str, str]] = []

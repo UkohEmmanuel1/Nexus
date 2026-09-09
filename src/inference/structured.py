@@ -23,7 +23,7 @@ class SchemaConstraint:
         )
 
     def parse_response(self, response: str) -> dict:
-        json_match = re.search(r'\{.*\}', response, re.DOTALL)
+        json_match = re.search(r"\{.*\}", response, re.DOTALL)
         if json_match:
             try:
                 return json.loads(json_match.group(0))
@@ -77,9 +77,7 @@ class StructuredOutput:
             schema["required"] = required
         return self.generate(prompt, schema, **kwargs)
 
-    def generate_list(
-        self, prompt: str, item_schema: dict, **kwargs
-    ) -> list:
+    def generate_list(self, prompt: str, item_schema: dict, **kwargs) -> list:
         schema = {
             "type": "array",
             "items": item_schema,

@@ -38,14 +38,14 @@ class MoE(nn.Module):
         self.z_loss_coef = self.moe_config.z_loss_coef
 
         self.gate = nn.Linear(config.dim, self.num_experts, bias=False)
-        self.experts = nn.ModuleList([
-            SwiGLU(config.dim, config.ffn_dim) for _ in range(self.num_experts)
-        ])
+        self.experts = nn.ModuleList(
+            [SwiGLU(config.dim, config.ffn_dim) for _ in range(self.num_experts)]
+        )
 
     def forward(self, x: torch.Tensor) -> tuple[torch.Tensor, torch.Tensor]:
         *leading_dims, d_model = x.shape
         x_flat = x.view(-1, d_model)
-        num_tokens = x_flat.shape[0]
+        x_flat.shape[0]
 
         logits = self.gate(x_flat)
         gates = F.softmax(logits.float(), dim=-1).type_as(logits)
@@ -75,7 +75,7 @@ class MoE(nn.Module):
         return final_output, aux_loss + z_loss
 
     def _compute_aux_loss(self, gates: torch.Tensor, top_k_indices: torch.Tensor) -> torch.Tensor:
-        num_tokens = gates.shape[0]
+        gates.shape[0]
         num_experts = self.num_experts
 
         probs = F.one_hot(top_k_indices, num_classes=num_experts).float().mean(dim=0)

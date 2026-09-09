@@ -11,11 +11,13 @@ class ImageProcessor:
         self.mean = mean or [0.485, 0.456, 0.406]
         self.std = std or [0.229, 0.224, 0.225]
 
-        self.transform = transforms.Compose([
-            transforms.Resize((image_size, image_size)),
-            transforms.ToTensor(),
-            transforms.Normalize(mean=self.mean, std=self.std),
-        ])
+        self.transform = transforms.Compose(
+            [
+                transforms.Resize((image_size, image_size)),
+                transforms.ToTensor(),
+                transforms.Normalize(mean=self.mean, std=self.std),
+            ]
+        )
 
     def load_image(self, image_path: str | Path) -> torch.Tensor:
         img = Image.open(image_path).convert("RGB")
@@ -49,8 +51,11 @@ class MultimodalEngine:
         input_ids = self.tokenizer.encode(prompt, add_bos=True)
         input_tensor = torch.tensor([input_ids], device=self.device)
 
-        img_embeds = self.model.module.token_embedding.get_image_embedding(image_tensor) \
-            if hasattr(self.model, 'module') else self.model.token_embedding.get_image_embedding(image_tensor)
+        (
+            self.model.module.token_embedding.get_image_embedding(image_tensor)
+            if hasattr(self.model, "module")
+            else self.model.token_embedding.get_image_embedding(image_tensor)
+        )
 
         output_ids = self.model.generate(
             input_tensor,

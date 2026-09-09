@@ -25,6 +25,9 @@ dependencies = [
     "tqdm>=4.66",
     "numpy>=1.24",
     "einops>=0.7",
+    "beautifulsoup4>=4.12",
+    "lxml>=4.9",
+    "httpx>=0.27",
 ]
 
 [project.optional-dependencies]

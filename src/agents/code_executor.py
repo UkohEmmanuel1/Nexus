@@ -8,18 +8,73 @@ from typing import Any
 logger = logging.getLogger(__name__)
 
 ALLOWED_IMPORTS = {
-    'math', 'random', 'datetime', 'json', 'collections', 'itertools',
-    'functools', 'statistics', 'typing', 'decimal', 'fractions', 're',
+    "math",
+    "random",
+    "datetime",
+    "json",
+    "collections",
+    "itertools",
+    "functools",
+    "statistics",
+    "typing",
+    "decimal",
+    "fractions",
+    "re",
 }
 
 RESTRICTED_BUILTINS = {
-    'abs', 'all', 'any', 'ascii', 'bin', 'bool', 'bytearray', 'bytes',
-    'chr', 'complex', 'dict', 'dir', 'divmod', 'enumerate', 'filter',
-    'float', 'format', 'frozenset', 'getattr', 'hasattr', 'hash', 'hex',
-    'id', 'int', 'isinstance', 'issubclass', 'iter', 'len', 'list', 'map',
-    'max', 'min', 'next', 'object', 'oct', 'ord', 'pow', 'print', 'range',
-    'repr', 'reversed', 'round', 'set', 'slice', 'sorted', 'str', 'sum',
-    'super', 'tuple', 'type', 'vars', 'zip',
+    "abs",
+    "all",
+    "any",
+    "ascii",
+    "bin",
+    "bool",
+    "bytearray",
+    "bytes",
+    "chr",
+    "complex",
+    "dict",
+    "dir",
+    "divmod",
+    "enumerate",
+    "filter",
+    "float",
+    "format",
+    "frozenset",
+    "getattr",
+    "hasattr",
+    "hash",
+    "hex",
+    "id",
+    "int",
+    "isinstance",
+    "issubclass",
+    "iter",
+    "len",
+    "list",
+    "map",
+    "max",
+    "min",
+    "next",
+    "object",
+    "oct",
+    "ord",
+    "pow",
+    "print",
+    "range",
+    "repr",
+    "reversed",
+    "round",
+    "set",
+    "slice",
+    "sorted",
+    "str",
+    "sum",
+    "super",
+    "tuple",
+    "type",
+    "vars",
+    "zip",
 }
 
 
@@ -113,20 +168,35 @@ print(_stderr.getvalue())
             for node in ast.walk(tree):
                 if isinstance(node, ast.Import):
                     for alias in node.names:
-                        base = alias.name.split('.')[0]
-                        if base not in ALLOWED_IMPORTS and not base.startswith('_'):
+                        base = alias.name.split(".")[0]
+                        if base not in ALLOWED_IMPORTS and not base.startswith("_"):
                             raise ValueError(f"Import not allowed: {alias.name}")
                 if isinstance(node, ast.ImportFrom):
                     if node.module:
-                        base = node.module.split('.')[0]
-                        if base not in ALLOWED_IMPORTS and not base.startswith('_'):
+                        base = node.module.split(".")[0]
+                        if base not in ALLOWED_IMPORTS and not base.startswith("_"):
                             raise ValueError(f"Import not allowed: {node.module}")
                 if isinstance(node, ast.Call):
                     if isinstance(node.func, ast.Attribute):
-                        dangerous = {'system', 'popen', 'run', 'call', 'check_output', 'exec', 'eval', 'compile'}
+                        dangerous = {
+                            "system",
+                            "popen",
+                            "run",
+                            "call",
+                            "check_output",
+                            "exec",
+                            "eval",
+                            "compile",
+                        }
                         if node.func.attr in dangerous:
-                            if isinstance(node.func.value, ast.Name) and node.func.value.id in ('os', 'subprocess', 'sys'):
-                                raise ValueError(f"Dangerous call: {node.func.value.id}.{node.func.attr}")
+                            if isinstance(node.func.value, ast.Name) and node.func.value.id in (
+                                "os",
+                                "subprocess",
+                                "sys",
+                            ):
+                                raise ValueError(
+                                    f"Dangerous call: {node.func.value.id}.{node.func.attr}"
+                                )
             return True
         except SyntaxError as e:
             raise ValueError(f"Syntax error: {e}")

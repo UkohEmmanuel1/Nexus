@@ -1,4 +1,3 @@
-
 import torch
 
 from .config import ModelConfig
@@ -25,11 +24,13 @@ class HierarchicalMemory:
             self.memories.pop(0)
             self.segment_ids.pop(0)
 
-    def get_memory_tokens(self, n_layers: int, device: torch.device, dtype: torch.dtype) -> torch.Tensor | None:
+    def get_memory_tokens(
+        self, n_layers: int, device: torch.device, dtype: torch.dtype
+    ) -> torch.Tensor | None:
         if not self.memories:
             return None
         pooled = []
-        for mem in self.memories[-self.memory_tokens:]:
+        for mem in self.memories[-self.memory_tokens :]:
             if mem.dim() == 3:
                 pooled.append(mem.mean(dim=1, keepdim=True))
         if not pooled:
@@ -76,5 +77,7 @@ def compress_hidden(
     compressed = seq_len // n_compress
     compressed_len = compressed * n_compress
     truncated = hidden_states[:, :compressed_len, :]
-    compressed = truncated.view(hidden_states.shape[0], n_compress, compress_ratio, hidden_states.shape[2])
+    compressed = truncated.view(
+        hidden_states.shape[0], n_compress, compress_ratio, hidden_states.shape[2]
+    )
     return compressed.mean(dim=2)

@@ -41,9 +41,15 @@ class ReasoningTrainer(Trainer):
 
             if thinking_mask is not None:
                 shift_thinking = thinking_mask[..., 1:].contiguous()
-                thinking_loss = (ce_loss * shift_thinking.float()).sum() / (shift_thinking.float().sum() + 1e-8)
-                standard_loss = (ce_loss * (1 - shift_thinking.float())).sum() / ((1 - shift_thinking.float()).sum() + 1e-8)
-                loss = (1 - self.thinking_loss_weight) * standard_loss + self.thinking_loss_weight * thinking_loss
+                thinking_loss = (ce_loss * shift_thinking.float()).sum() / (
+                    shift_thinking.float().sum() + 1e-8
+                )
+                standard_loss = (ce_loss * (1 - shift_thinking.float())).sum() / (
+                    (1 - shift_thinking.float()).sum() + 1e-8
+                )
+                loss = (
+                    1 - self.thinking_loss_weight
+                ) * standard_loss + self.thinking_loss_weight * thinking_loss
             else:
                 loss = ce_loss.mean()
 

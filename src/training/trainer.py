@@ -51,7 +51,9 @@ class Trainer:
 
         self._build_scheduler()
 
-        self.scaler = torch.amp.GradScaler("cuda", enabled=(config.get("dtype", "bfloat16") == "float16"))
+        self.scaler = torch.amp.GradScaler(
+            "cuda", enabled=(config.get("dtype", "bfloat16") == "float16")
+        )
         self.use_amp = config.get("dtype", "bfloat16") in ("float16", "bfloat16")
         self.amp_dtype = torch.bfloat16 if config.get("dtype") == "bfloat16" else torch.float16
 
@@ -153,12 +155,15 @@ class Trainer:
 
                     if self.use_wandb:
                         import wandb
-                        wandb.log({
-                            "loss": avg_loss,
-                            "lr": lr,
-                            "perplexity": math.exp(avg_loss),
-                            "step": self.global_step,
-                        })
+
+                        wandb.log(
+                            {
+                                "loss": avg_loss,
+                                "lr": lr,
+                                "perplexity": math.exp(avg_loss),
+                                "step": self.global_step,
+                            }
+                        )
 
                     running_loss = 0.0
                     start_time = time.time()
@@ -166,9 +171,15 @@ class Trainer:
                 if self.global_step % self.save_interval == 0 and self.global_step > 0:
                     self._save()
 
-                if eval_dataloader and self.global_step % self.eval_interval == 0 and self.global_step > 0:
+                if (
+                    eval_dataloader
+                    and self.global_step % self.eval_interval == 0
+                    and self.global_step > 0
+                ):
                     eval_loss = self.evaluate(eval_dataloader)
-                    logger.info(f"Eval loss: {eval_loss:.4f}, perplexity: {math.exp(eval_loss):.2f}")
+                    logger.info(
+                        f"Eval loss: {eval_loss:.4f}, perplexity: {math.exp(eval_loss):.2f}"
+                    )
                     if eval_loss < self.best_loss:
                         self.best_loss = eval_loss
                         self._save(best=True)
@@ -239,6 +250,7 @@ def main():
     @hydra.main(version_base=None, config_path="../../configs/training", config_name="pretrain")
     def _main(cfg: DictConfig):
         from src.model import ModelConfig, MoEConfig, Transformer
+
         model_cfg = ModelConfig(
             dim=cfg.model.dim,
             n_layers=cfg.model.n_layers,

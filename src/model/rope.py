@@ -14,9 +14,15 @@ def precompute_freqs_cis(
 ) -> torch.Tensor:
     if scaling_type in ("yarn", "ntk"):
         return _precompute_freqs_cis_scaled(
-            dim, max_seq_len, theta, device,
-            scaling_type, scaling_factor, original_max_seq_len,
-            beta_fast, beta_slow,
+            dim,
+            max_seq_len,
+            theta,
+            device,
+            scaling_type,
+            scaling_factor,
+            original_max_seq_len,
+            beta_fast,
+            beta_slow,
         )
 
     freqs = 1.0 / (theta ** (torch.arange(0, dim, 2, device=device).float() / dim))
@@ -41,14 +47,16 @@ def _precompute_freqs_cis_scaled(
 
     if scaling_type == "ntk":
         theta_scale = scaling_factor ** (dim / (dim - 2))
-        freqs = 1.0 / ((theta * theta_scale) ** (torch.arange(0, dim, 2, device=device).float() / dim))
+        freqs = 1.0 / (
+            (theta * theta_scale) ** (torch.arange(0, dim, 2, device=device).float() / dim)
+        )
     elif scaling_type == "yarn":
         t = torch.arange(original_max_seq_len, device=device, dtype=torch.float32)
         t = t / scaling_factor
 
         _freqs = 1.0 / (theta ** (torch.arange(0, dim, 2, device=device).float() / dim))
         freqs_out = torch.outer(t, _freqs)
-        freqs_cis_out = torch.polar(torch.ones_like(freqs_out), freqs_out)
+        torch.polar(torch.ones_like(freqs_out), freqs_out)
 
         dims = dim // 2
         wave_len = 2 * torch.pi * theta ** (2 * torch.arange(dims, device=device).float() / dim)

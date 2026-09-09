@@ -17,7 +17,9 @@ class Attention(nn.Module):
         self.n_rep = config.n_rep
         self.layer_id = layer_id
 
-        self.sliding_window = config.long_context.sliding_window_size if config.long_context.enabled else 0
+        self.sliding_window = (
+            config.long_context.sliding_window_size if config.long_context.enabled else 0
+        )
 
         self.wq = nn.Linear(self.dim, self.n_heads * self.head_dim, bias=False)
         self.wk = nn.Linear(self.dim, self.n_kv_heads * self.head_dim, bias=False)
@@ -43,11 +45,15 @@ class Attention(nn.Module):
         self.cache_k = None
         self.cache_v = None
 
-    def _sliding_window_mask(self, seq_len: int, start_pos: int, device: torch.device, dtype: torch.dtype) -> torch.Tensor:
+    def _sliding_window_mask(
+        self, seq_len: int, start_pos: int, device: torch.device, dtype: torch.dtype
+    ) -> torch.Tensor:
         if self.sliding_window <= 0 or seq_len <= self.sliding_window:
             return None
         mask = torch.full((seq_len, seq_len + start_pos), float("-inf"), device=device, dtype=dtype)
-        causal_mask = torch.triu(torch.full((seq_len, seq_len), float("-inf"), device=device, dtype=dtype), diagonal=1)
+        causal_mask = torch.triu(
+            torch.full((seq_len, seq_len), float("-inf"), device=device, dtype=dtype), diagonal=1
+        )
         mask[:, :start_pos] = 0.0
         mask[:, start_pos:] = causal_mask
 
@@ -92,7 +98,7 @@ class Attention(nn.Module):
             mask = self._sliding_window_mask(seq_len, start_pos, x.device, x.dtype)
 
         if self.config.use_flash_attn:
-            scale = self.head_dim ** -0.5
+            scale = self.head_dim**-0.5
             attn_output = F.scaled_dot_product_attention(
                 xq.transpose(1, 2),
                 keys.transpose(1, 2),
@@ -103,8 +109,10 @@ class Attention(nn.Module):
             )
             attn_output = attn_output.transpose(1, 2).contiguous()
         else:
-            scale = self.head_dim ** -0.5
-            scores = torch.matmul(xq.transpose(1, 2), keys.transpose(1, 2).transpose(-2, -1)) * scale
+            scale = self.head_dim**-0.5
+            scores = (
+                torch.matmul(xq.transpose(1, 2), keys.transpose(1, 2).transpose(-2, -1)) * scale
+            )
             if mask is not None:
                 scores = scores + mask
             scores = F.softmax(scores.float(), dim=-1).type_as(xq)

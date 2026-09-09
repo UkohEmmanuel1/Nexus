@@ -1,4 +1,3 @@
-
 import torch
 from torch.utils.data import DataLoader
 
@@ -68,13 +67,17 @@ def finetune_sft(
         num_workers=4,
         pin_memory=True,
     )
-    val_loader = DataLoader(
-        val_dataset,
-        batch_size=batch_size,
-        shuffle=False,
-        num_workers=4,
-        pin_memory=True,
-    ) if val_dataset else None
+    val_loader = (
+        DataLoader(
+            val_dataset,
+            batch_size=batch_size,
+            shuffle=False,
+            num_workers=4,
+            pin_memory=True,
+        )
+        if val_dataset
+        else None
+    )
 
     trainer.train(train_loader, eval_dataloader=val_loader, resume_from=resume_from)
     return trainer

@@ -15,9 +15,7 @@ class Transformer(nn.Module):
         self.config = config
 
         self.token_embedding = nn.Embedding(config.vocab_size, config.dim)
-        self.layers = nn.ModuleList([
-            TransformerBlock(i, config) for i in range(config.n_layers)
-        ])
+        self.layers = nn.ModuleList([TransformerBlock(i, config) for i in range(config.n_layers)])
         self.norm = RMSNorm(config.dim, eps=config.norm_eps)
         self.output = nn.Linear(config.dim, config.vocab_size, bias=False)
 
@@ -60,7 +58,9 @@ class Transformer(nn.Module):
             elif isinstance(module, nn.Embedding):
                 module.weight.data.normal_(mean=0.0, std=std)
 
-    def init_kv_cache(self, batch_size: int, max_seq_len: int, device: torch.device, dtype: torch.dtype):
+    def init_kv_cache(
+        self, batch_size: int, max_seq_len: int, device: torch.device, dtype: torch.dtype
+    ):
         for layer in self.layers:
             layer.attention.init_kv_cache(batch_size, max_seq_len, device, dtype)
 
@@ -92,7 +92,10 @@ class Transformer(nn.Module):
         total_len = h.shape[1]
         mask = None
         if seq_len > 1 and start_pos == 0:
-            if self.config.long_context.enabled and total_len > self.config.long_context.sliding_window_size:
+            if (
+                self.config.long_context.enabled
+                and total_len > self.config.long_context.sliding_window_size
+            ):
                 mask = create_long_context_mask(
                     seq_len,
                     self.config.long_context.chunk_size,
@@ -119,7 +122,7 @@ class Transformer(nn.Module):
             total_aux_loss = total_aux_loss + aux_loss
 
         if memory_tokens is not None:
-            h = h[:, memory_tokens.shape[1]:, :]
+            h = h[:, memory_tokens.shape[1] :, :]
 
         h = self.norm(h)
         logits = self.output(h)
@@ -153,7 +156,7 @@ class Transformer(nn.Module):
         )
 
         generated = input_ids.clone()
-        prompt_len = input_ids.shape[1]
+        input_ids.shape[1]
         start_pos = 0
         thinking_text = ""
         in_thinking = False
@@ -213,9 +216,14 @@ class Transformer(nn.Module):
 
             if thinking_mode and in_thinking:
                 thinking_budget_remaining -= 1
-                if next_token.item() == self.config.thinking.end_think_token_id or thinking_budget_remaining <= 0:
+                if (
+                    next_token.item() == self.config.thinking.end_think_token_id
+                    or thinking_budget_remaining <= 0
+                ):
                     in_thinking = False
-                    think_end = torch.tensor([[self.config.thinking.end_think_token_id]], device=device)
+                    think_end = torch.tensor(
+                        [[self.config.thinking.end_think_token_id]], device=device
+                    )
                     generated = torch.cat([generated, think_end], dim=-1)
                     start_pos += 1
                     continue
@@ -278,9 +286,11 @@ class Transformer(nn.Module):
                 loss = F.cross_entropy(
                     shift_logits.view(-1, shift_logits.size(-1)),
                     shift_labels.view(-1),
-                    reduction='sum',
+                    reduction="sum",
                 )
                 scores.append(-loss.item() / max(cand.shape[1] - 1, 1))
 
         best_idx = torch.tensor(scores).argmax().item()
-        return candidates[best_idx], f"Deep Think: evaluated {n_hypotheses} hypotheses, selected #{best_idx + 1}"
+        return candidates[
+            best_idx
+        ], f"Deep Think: evaluated {n_hypotheses} hypotheses, selected #{best_idx + 1}"

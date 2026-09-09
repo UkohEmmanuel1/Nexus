@@ -22,7 +22,9 @@ class DocumentIndex:
             return []
 
         query_norm = query_embedding / (np.linalg.norm(query_embedding) + 1e-10)
-        doc_norms = self.embeddings / (np.linalg.norm(self.embeddings, axis=1, keepdims=True) + 1e-10)
+        doc_norms = self.embeddings / (
+            np.linalg.norm(self.embeddings, axis=1, keepdims=True) + 1e-10
+        )
         scores = np.dot(doc_norms, query_norm.T).flatten()
 
         top_indices = np.argsort(scores)[-top_k:][::-1]

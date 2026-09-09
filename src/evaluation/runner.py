@@ -84,6 +84,7 @@ class Evaluator:
     def _evaluate_mmlu(self, **kwargs) -> dict:
         try:
             from lm_eval import evaluator
+
             results = evaluator.simple_evaluate(
                 model=self,
                 tasks=["mmlu"],
@@ -97,6 +98,7 @@ class Evaluator:
     def _evaluate_gsm8k(self, **kwargs) -> dict:
         try:
             from lm_eval import evaluator
+
             results = evaluator.simple_evaluate(
                 model=self,
                 tasks=["gsm8k"],
@@ -110,6 +112,7 @@ class Evaluator:
     def _evaluate_humaneval(self, **kwargs) -> dict:
         try:
             from evalplus.evaluate import evaluate
+
             results = evaluate(
                 model=self,
                 dataset="humaneval",
@@ -123,6 +126,7 @@ class Evaluator:
 
 def main():
     import argparse
+
     parser = argparse.ArgumentParser()
     parser.add_argument("--model", type=str, required=True)
     parser.add_argument("--tokenizer", type=str, required=True)

@@ -25,7 +25,7 @@ class TaskPlanner:
         )
 
         response = self.engine.generate(prompt, max_new_tokens=1024, temperature=0.3)
-        json_match = re.search(r'\[.*\]', response, re.DOTALL)
+        json_match = re.search(r"\[.*\]", response, re.DOTALL)
         if json_match:
             try:
                 return json.loads(json_match.group(0))
@@ -54,13 +54,17 @@ class StepExecutor:
         if tool == "complete":
             return {"result": context.get("accumulated", ""), "status": "done"}
 
-        context_str = json.dumps(context.get("results", {}), indent=2) if context.get("results") else "No prior results."
+        context_str = (
+            json.dumps(context.get("results", {}), indent=2)
+            if context.get("results")
+            else "No prior results."
+        )
 
         prompt = (
             f"Sub-task: {description}\n"
             f"Tool to use: {tool}\n"
             f"Context from previous steps:\n{context_str}\n\n"
-            f"Execute this sub-task{' using the appropriate tool' if tool != 'reason' else ''} and provide the result."
+            f"Execute this sub-task{' using the appropriate tool' if tool != 'reason' else ''} and provide the result.",  # noqa: E501
         )
 
         if tool in self.tools and tool != "reason":

@@ -6,11 +6,22 @@ import sentencepiece as spm
 logger = logging.getLogger(__name__)
 
 DEFAULT_SPECIAL_TOKENS = [
-    "<unk>", "<s>", "</s>", "<pad>",
-    "<mask>", "<sep>", "<cls>",
-    "<tool_call>", "<tool_result>", "<function_call>", "<function_result>",
-    "<|im_start|>", "<|im_end|>",
-    "<|system|>", "<|user|>", "<|assistant|>",
+    "<unk>",
+    "<s>",
+    "</s>",
+    "<pad>",
+    "<mask>",
+    "<sep>",
+    "<cls>",
+    "<tool_call>",
+    "<tool_result>",
+    "<function_call>",
+    "<function_result>",
+    "<|im_start|>",
+    "<|im_end|>",
+    "<|system|>",
+    "<|user|>",
+    "<|assistant|>",
 ]
 
 

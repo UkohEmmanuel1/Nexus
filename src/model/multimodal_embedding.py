@@ -1,4 +1,3 @@
-
 import torch
 import torch.nn as nn
 
@@ -42,11 +41,11 @@ class MultimodalEmbedding(nn.Module):
                 text_pos = 0
                 while text_pos < input_ids.shape[1]:
                     if input_ids[i, text_pos].item() == self.image_token_id:
-                        seq.append(image_embeds[img_idx:img_idx+1].squeeze(0))
+                        seq.append(image_embeds[img_idx : img_idx + 1].squeeze(0))
                         img_idx += 1
                         text_pos += 1
                     else:
-                        seq.append(text_embeds[i, text_pos:text_pos+1])
+                        seq.append(text_embeds[i, text_pos : text_pos + 1])
                         text_pos += 1
                 final_embeds.append(torch.cat(seq, dim=0))
 
@@ -54,7 +53,9 @@ class MultimodalEmbedding(nn.Module):
             padded = []
             for e in final_embeds:
                 if e.shape[0] < max_len:
-                    e = torch.cat([e, torch.zeros(max_len - e.shape[0], e.shape[1], device=e.device)])
+                    e = torch.cat(
+                        [e, torch.zeros(max_len - e.shape[0], e.shape[1], device=e.device)]
+                    )
                 padded.append(e)
             return torch.stack(padded)
 

@@ -21,6 +21,7 @@ tokenizer/*.model
 tokenizer/*.vocab
 *.safetensors
 *.bin
+*.gguf
 *.pt
 *.pth
 **/.hydra/

@@ -23,7 +23,7 @@ class AgentOrchestrator:
         plan = self.planner.create_execution_plan(task)
         context = {"results": {}, "accumulated": ""}
 
-        for step in plan["sub_tasks"][:self.max_iterations]:
+        for step in plan["sub_tasks"][: self.max_iterations]:
             result = self.executor.execute_step(step, context)
             step_id = str(step.get("id", 0))
             context["results"][step_id] = {
@@ -56,7 +56,7 @@ class AgentOrchestrator:
 
         context = {"results": {}, "accumulated": ""}
 
-        for step in plan["sub_tasks"][:self.max_iterations]:
+        for step in plan["sub_tasks"][: self.max_iterations]:
             yield {"type": "step_start", "data": step}
             result = self.executor.execute_step(step, context)
             step_id = str(step.get("id", 0))
@@ -80,8 +80,11 @@ class AgentOrchestrator:
         yield {"type": "final", "data": final_answer}
 
 
-def create_orchestrator(engine: InferenceEngine, extra_tools: dict[str, Callable] = None) -> AgentOrchestrator:
+def create_orchestrator(
+    engine: InferenceEngine, extra_tools: dict[str, Callable] = None
+) -> AgentOrchestrator:
     from .tools import get_function_map
+
     tools = get_function_map()
     if extra_tools:
         tools.update(extra_tools)

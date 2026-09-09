@@ -1,4 +1,3 @@
-
 import torch
 
 from src.utils.logging import get_logger
@@ -53,7 +52,7 @@ def apply_qlora(
         logger.error("bitsandbytes or peft not installed")
         raise
 
-    bnb_config = BitsAndBytesConfig(
+    BitsAndBytesConfig(
         load_in_4bit=True,
         bnb_4bit_compute_dtype=bnb_4bit_compute_dtype,
         bnb_4bit_quant_type=bnb_4bit_quant_type,

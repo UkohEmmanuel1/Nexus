@@ -10,6 +10,7 @@ class SearchGrounding:
     def _default_search(self, query: str) -> list[dict[str, str]]:
         try:
             import requests
+
             resp = requests.get(
                 "https://api.duckduckgo.com/",
                 params={"q": query, "format": "json", "no_html": 1},
@@ -19,18 +20,24 @@ class SearchGrounding:
             results = []
             abstract = data.get("AbstractText", "")
             if abstract:
-                results.append({
-                    "title": data.get("Heading", "Result"),
-                    "snippet": abstract,
-                    "source": data.get("AbstractSource", "web"),
-                })
+                results.append(
+                    {
+                        "title": data.get("Heading", "Result"),
+                        "snippet": abstract,
+                        "source": data.get("AbstractSource", "web"),
+                    }
+                )
             for topic in data.get("RelatedTopics", [])[:5]:
                 if "Text" in topic:
-                    results.append({
-                        "title": topic.get("Text", "").split(" - ")[0] if " - " in topic.get("Text", "") else "",
-                        "snippet": topic.get("Text", ""),
-                        "source": topic.get("FirstURL", ""),
-                    })
+                    results.append(
+                        {
+                            "title": topic.get("Text", "").split(" - ")[0]
+                            if " - " in topic.get("Text", "")
+                            else "",
+                            "snippet": topic.get("Text", ""),
+                            "source": topic.get("FirstURL", ""),
+                        }
+                    )
             return results
         except ImportError:
             logger.warning("requests not available for web search")
