@@ -24,23 +24,112 @@
 
 ---
 
-## Quick Start
+## Getting Started & Usage
+
+### 1. Prerequisites & Installation
+
+Ensure you have **Python 3.10+** and **Git** installed on your machine or laptop.
 
 ```bash
-# Install
-pip install -e ".[all]"
+# Clone repository
+git clone https://github.com/UkohEmmanuel1/Nexus.git
+cd Nexus
 
-# Train tokenizer (requires text corpus)
+# Create and activate virtual environment
+python -m venv .venv
+
+# On Windows:
+.venv\Scripts\activate
+# On macOS / Linux:
+source .venv/bin/activate
+
+# Install dependencies
+pip install -e ".[all]"
+# (Or for lightweight inference only: pip install -e ".[inference]")
+```
+
+---
+
+### 2. Running on Your Laptop / Local Machine
+
+Nexus can run on both CPU and CUDA-enabled GPUs. When running on a standard laptop without an NVIDIA GPU, add `--device cpu`.
+
+#### Option A: Interactive CLI Chat
+```bash
+# Standard chat (CPU)
+nexus --model checkpoints/model.pt --tokenizer tokenizer/tokenizer.model --device cpu
+
+# Thinking Mode (with reasoning trace enabled)
+nexus --model checkpoints/model.pt --tokenizer tokenizer/tokenizer.model --device cpu --thinking
+```
+*In chat mode: type your message and press Enter. Use `/clear` to reset context or `exit` to quit.*
+
+---
+
+#### Option B: OpenAI-Compatible API Server
+Start the local FastAPI server:
+```bash
+nexus --serve --device cpu --port 8000 --api-key sk-your-key
+```
+
+Query the completions endpoint using `curl`:
+```bash
+curl http://localhost:8000/v1/chat/completions \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer sk-your-key" \
+  -d '{
+    "model": "nexus",
+    "messages": [{"role": "user", "content": "Explain quantum computing in simple terms."}],
+    "stream": true
+  }'
+```
+
+---
+
+#### Option C: Web Frontend UI (Browser)
+Nexus includes a Next.js chat interface:
+1. Ensure the API server is running (`nexus --serve --device cpu`).
+2. Launch the frontend:
+   ```bash
+   cd frontend
+   npm install
+   npm run dev
+   ```
+3. Open `http://localhost:3000` in your web browser.
+
+---
+
+#### Option D: Python SDK (Direct Code Integration)
+```python
+from src.inference.engine import InferenceEngine
+from src.model import ModelConfig, Transformer
+from src.tokenizer import Tokenizer
+import torch
+
+# Load configuration and model
+config = ModelConfig()
+model = Transformer(config)
+state = torch.load("checkpoints/model.pt", map_location="cpu", weights_only=True)
+model.load_state_dict(state.get("model_state_dict", state))
+
+tokenizer = Tokenizer("tokenizer/tokenizer.model")
+engine = InferenceEngine(model, tokenizer, device="cpu")
+
+# Stream generation
+for token in engine.generate("Write a quicksort function in Python:", stream=True):
+    print(token, end="", flush=True)
+```
+
+---
+
+### 3. Training & Fine-Tuning
+
+```bash
+# Train tokenizer
 nexus-train --input data/corpus.txt --vocab-size 128000
 
-# Chat with a trained model
-nexus --model checkpoints/model.pt --tokenizer tokenizer/tokenizer.model
-
-# Thinking mode
-nexus --model checkpoints/model.pt --tokenizer tokenizer/tokenizer.model --thinking
-
-# API server
-nexus --serve --api-key sk-your-key
+# Run evaluation benchmarks
+nexus-eval --model checkpoints/model.pt --benchmarks gsm8k,humaneval
 ```
 
 ---
