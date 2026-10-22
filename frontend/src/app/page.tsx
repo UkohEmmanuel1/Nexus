@@ -3,7 +3,7 @@
 import React, { useState, useEffect, useRef } from "react";
 
 interface ApiKeyItem {
-  key: string;
+  id: string;
   name: string;
   created_at: number;
   status: string;
@@ -96,10 +96,11 @@ function OrbitLogo({ className = "" }: { className?: string }) {
 
 export default function Home() {
   const [activeTab, setActiveTab] = useState<"chat" | "keys">("chat");
-  const [serverUrl, setServerUrl] = useState("http://localhost:8000");
+  const [serverUrl, setServerUrl] = useState("");
   const [adminKey, setAdminKey] = useState("");
   const [keyName, setKeyName] = useState("");
   const [newKey, setNewKey] = useState("");
+  const [activeUserKey, setActiveUserKey] = useState("");
   const [keysList, setKeysList] = useState<ApiKeyItem[]>([]);
   const [codeTab, setCodeTab] = useState<"curl" | "python" | "nodejs">("curl");
 
@@ -112,18 +113,18 @@ export default function Home() {
         "Welcome to the Nexus Local LLM Chat Console. Ask me anything, or toggle Deep Think to view my reasoning steps.",
     },
   ]);
-  const [deepThinkEnabled, setDeepThinkEnabled] = useState(true);
+  const [deepThinkEnabled, setDeepThinkEnabled] = useState(false);
   const [isGenerating, setIsGenerating] = useState(false);
   const [collapsedThoughts, setCollapsedThoughts] = useState<{ [key: number]: boolean }>({});
 
   const chatEndRef = useRef<HTMLDivElement>(null);
 
-  // Load configuration from localStorage
+  // Credentials stay in memory; clear credentials saved by older versions.
   useEffect(() => {
     if (typeof window !== "undefined") {
-      const savedAdmin = localStorage.getItem("nexus_admin_key") || "";
-      const savedServer = localStorage.getItem("nexus_server_url") || "http://localhost:8000";
-      setAdminKey(savedAdmin);
+      localStorage.removeItem("nexus_admin_key");
+      localStorage.removeItem("nexus_active_user_key");
+      const savedServer = window.location.port === "3000" ? "http://localhost:8000" : window.location.origin;
       setServerUrl(savedServer);
     }
   }, []);
@@ -135,14 +136,21 @@ export default function Home() {
 
   // Fetch keys list when switching to keys tab or when admin key changes
   useEffect(() => {
-    if (activeTab === "keys") {
+    if (activeTab === "keys" && adminKey) {
       fetchKeys();
     }
   }, [activeTab, adminKey, serverUrl]);
 
-  const saveConfig = (admin: string, url: string) => {
-    localStorage.setItem("nexus_admin_key", admin);
-    localStorage.setItem("nexus_server_url", url);
+
+
+  const apiFetch = (url: string, options?: RequestInit) => {
+    const endpoint = new URL(url, window.location.origin);
+    const loopback = ["localhost", "127.0.0.1", "[::1]"].includes(endpoint.hostname);
+    if (endpoint.protocol !== "https:" && !(endpoint.protocol === "http:" && loopback)) {
+      throw new Error("Use HTTPS for remote servers.");
+    }
+    if (endpoint.username || endpoint.password) throw new Error("Do not put credentials in URLs.");
+    return fetch(endpoint, { ...options, redirect: "error", signal: AbortSignal.timeout(120000) });
   };
 
   // Fetch API keys from server
@@ -154,11 +162,12 @@ export default function Home() {
       if (adminKey) {
         headers["X-API-Key"] = adminKey;
       }
-      const res = await fetch(`${serverUrl}/v1/keys`, { headers });
+      const res = await apiFetch(`${serverUrl}/v1/keys`, { headers });
       if (res.ok) {
         const data = await res.json();
         setKeysList(data);
       } else {
+        setKeysList([]);
         console.error("Failed to fetch keys:", res.statusText);
       }
     } catch (err) {
@@ -169,7 +178,7 @@ export default function Home() {
   // Generate a new key
   const handleGenerateKey = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!keyName.trim()) return;
+    if (!keyName.trim() || !adminKey) return;
 
     try {
       const headers: Record<string, string> = {
@@ -179,7 +188,7 @@ export default function Home() {
         headers["Authorization"] = `Bearer ${adminKey}`;
       }
 
-      const res = await fetch(`${serverUrl}/v1/keys/generate`, {
+      const res = await apiFetch(`${serverUrl}/v1/keys/generate`, {
         method: "POST",
         headers,
         body: JSON.stringify({ name: keyName }),
@@ -188,15 +197,15 @@ export default function Home() {
       if (res.ok) {
         const data = await res.json();
         setNewKey(data.key);
-        localStorage.setItem("nexus_active_user_key", data.key);
+        setActiveUserKey(data.key);
         setKeyName("");
         fetchKeys();
       } else {
         const err = await res.json();
         alert(`Error: ${err.detail || res.statusText}`);
       }
-    } catch (err: any) {
-      alert(`Request failed: ${err.message}`);
+    } catch (err: unknown) {
+      alert(`Request failed: ${err instanceof Error ? err.message : "Request failed"}`);
     }
   };
 
@@ -205,7 +214,7 @@ export default function Home() {
     if (!confirm("Are you sure you want to revoke this key? This cannot be undone.")) return;
 
     // Use current active key (or admin key) for authentication
-    const authKey = localStorage.getItem("nexus_active_user_key") || adminKey;
+    const authKey = adminKey;
 
     try {
       const headers: Record<string, string> = {
@@ -215,7 +224,7 @@ export default function Home() {
         headers["X-API-Key"] = authKey;
       }
 
-      const res = await fetch(`${serverUrl}/v1/keys/revoke`, {
+      const res = await apiFetch(`${serverUrl}/v1/keys/revoke`, {
         method: "POST",
         headers,
         body: JSON.stringify({ key }),
@@ -227,8 +236,8 @@ export default function Home() {
         const err = await res.json();
         alert(`Error: ${err.detail || res.statusText}`);
       }
-    } catch (err: any) {
-      alert(`Request failed: ${err.message}`);
+    } catch (err: unknown) {
+      alert(`Request failed: ${err instanceof Error ? err.message : "Request failed"}`);
     }
   };
 
@@ -243,17 +252,17 @@ export default function Home() {
     setMessages((prev) => [...prev, { role: "user", content: userMessageText }]);
     setIsGenerating(true);
 
-    const activeUserKey = localStorage.getItem("nexus_active_user_key") || adminKey;
+    const chatKey = activeUserKey || adminKey;
 
     try {
       const headers: Record<string, string> = {
         "Content-Type": "application/json",
       };
-      if (activeUserKey) {
-        headers["X-API-Key"] = activeUserKey;
+      if (chatKey) {
+        headers["X-API-Key"] = chatKey;
       }
 
-      const res = await fetch(`${serverUrl}/chat`, {
+      const res = await apiFetch(`${serverUrl}/chat`, {
         method: "POST",
         headers,
         body: JSON.stringify({
@@ -287,10 +296,10 @@ export default function Home() {
           },
         ]);
       }
-    } catch (err: any) {
+    } catch (err: unknown) {
       setMessages((prev) => [
         ...prev,
-        { role: "assistant", content: `Network error: ${err.message}`, error: true },
+        { role: "assistant", content: `Network error: ${err instanceof Error ? err.message : "Request failed"}`, error: true },
       ]);
     } finally {
       setIsGenerating(false);
@@ -481,10 +490,16 @@ export default function Home() {
               <div className="bg-white/[0.03] border border-white/[0.08] backdrop-blur-xl rounded-2xl p-6 flex flex-col gap-6">
                 <div>
                   <h3 className="font-semibold text-sm tracking-tight">Server Settings</h3>
-                  <p className="text-xs text-slate-500 mt-1">Target Nexus Server URI and master admin keys.</p>
+                  <p className="text-xs text-slate-500 mt-1">Keys are kept only until this page is reloaded. Save new keys securely.</p>
                 </div>
 
                 <div className="flex flex-col gap-4">
+                  <div className="flex flex-col gap-1.5">
+                    <label htmlFor="chat-key" className="text-[11px] font-semibold uppercase tracking-wider text-slate-400">Chat API Key</label>
+                    <input id="chat-key" type="password" autoComplete="off" value={activeUserKey}
+                      onChange={(e) => setActiveUserKey(e.target.value)} placeholder="Enter your API key to chat"
+                      className="bg-[#07090D]/60 border border-white/[0.08] rounded-lg px-3 py-2 text-sm text-slate-200" />
+                  </div>
                   <div className="flex flex-col gap-1.5">
                     <label className="text-[11px] font-semibold uppercase tracking-wider text-slate-400">Server Endpoint</label>
                     <input
@@ -492,7 +507,10 @@ export default function Home() {
                       value={serverUrl}
                       onChange={(e) => {
                         setServerUrl(e.target.value);
-                        saveConfig(adminKey, e.target.value);
+                        setAdminKey("");
+                        setActiveUserKey("");
+                        setKeysList([]);
+                        setNewKey("");
                       }}
                       className="bg-[#07090D]/60 border border-white/[0.08] rounded-lg px-3 py-2 text-sm text-slate-200 outline-none focus:border-violet-400/50 focus:ring-1 focus:ring-violet-400/20 transition-all"
                     />
@@ -501,12 +519,13 @@ export default function Home() {
                   <div className="flex flex-col gap-1.5">
                     <label className="text-[11px] font-semibold uppercase tracking-wider text-violet-300">Admin Key (NEXUS_ADMIN_KEY)</label>
                     <input
+                      autoComplete="off"
                       type="password"
                       placeholder="Enter admin secret..."
                       value={adminKey}
                       onChange={(e) => {
                         setAdminKey(e.target.value);
-                        saveConfig(e.target.value, serverUrl);
+
                       }}
                       className="bg-[#07090D]/60 border border-white/[0.08] rounded-lg px-3 py-2 text-sm text-slate-200 outline-none focus:border-violet-400/50 focus:ring-1 focus:ring-violet-400/20 transition-all placeholder:text-slate-600"
                     />
@@ -575,7 +594,7 @@ export default function Home() {
                   {["curl", "python", "nodejs"].map((tab) => (
                     <button
                       key={tab}
-                      onClick={() => setCodeTab(tab as any)}
+                      onClick={() => setCodeTab(tab as "curl" | "python" | "nodejs")}
                       className={`px-4 py-2 text-[11px] font-semibold uppercase tracking-wider transition-all border-b-2 ${
                         codeTab === tab
                           ? "border-violet-400/70 text-violet-300"
@@ -675,7 +694,7 @@ console.log(data.response);`}
                         <tr key={idx} className="border-b border-white/[0.05] hover:bg-white/[0.02] transition-colors">
                           <td className="py-4 px-4 font-semibold text-slate-200">{item.name}</td>
                           <td className="py-4 px-4 font-mono text-slate-400">
-                            {item.key.substring(0, 12)}...{item.key.substring(item.key.length - 4)}
+                            {item.id.substring(7, 19)}...
                           </td>
                           <td className="py-4 px-4 text-slate-400">
                             {new Date(item.created_at * 1000).toLocaleString()}
@@ -685,7 +704,7 @@ console.log(data.response);`}
                               <span className="text-rose-400 font-semibold pr-2 text-[10px] uppercase tracking-wider">Revoked</span>
                             ) : (
                               <button
-                                onClick={() => handleRevokeKey(item.key)}
+                                onClick={() => handleRevokeKey(item.id)}
                                 className="border border-rose-400/30 text-rose-400 hover:bg-rose-400 hover:text-white px-3 py-1.5 rounded-lg transition-all font-semibold text-[11px]"
                               >
                                 Revoke

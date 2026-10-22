@@ -1,59 +1,23 @@
-version: "3.9"
-
 services:
   api:
     build:
       context: ..
       dockerfile: docker/Dockerfile
     ports:
-      - "8000:8000"
-    volumes:
-      - ../checkpoints:/app/checkpoints
-      - ../tokenizer:/app/tokenizer
-      - ../data:/app/data
+      - "127.0.0.1:8000:8000"
     environment:
-      - CUDA_VISIBLE_DEVICES=0
-      - OPENLLM_MODEL_PATH=/app/checkpoints/model.pt
-      - OPENLLM_TOKENIZER_PATH=/app/tokenizer/tokenizer.model
-    command: ["python", "-m", "src.inference.server"]
-    deploy:
-      resources:
-        reservations:
-          devices:
-            - driver: nvidia
-              count: 1
-              capabilities: [gpu]
-
-  chat:
-    build:
-      context: ..
-      dockerfile: docker/Dockerfile
-    ports:
-      - "8080:8080"
+      NEXUS_ADMIN_KEY: ${NEXUS_ADMIN_KEY:?Set NEXUS_ADMIN_KEY}
+      NEXUS_API_KEY: ${NEXUS_API_KEY:?Set NEXUS_API_KEY}
+      NEXUS_MODEL_REPO: Qwen/Qwen2.5-1.5B-Instruct-GGUF
+      NEXUS_MODEL_FILE: qwen2.5-1.5b-instruct-q4_k_m.gguf
+      NEXUS_MODEL_REVISION: 91cad51170dc346986eccefdc2dd33a9da36ead9
     volumes:
-      - ../checkpoints:/app/checkpoints
-      - ../tokenizer:/app/tokenizer
-    environment:
-      - CUDA_VISIBLE_DEVICES=0
-    stdin_open: true
-    tty: true
-    command: ["python", "-m", "src.inference.cli", "--model", "/app/checkpoints/model.pt", "--tokenizer", "/app/tokenizer/tokenizer.model"]
-
-  # training:
-  #   build:
-  #     context: ..
-  #     dockerfile: docker/Dockerfile
-  #   volumes:
-  #     - ../checkpoints:/app/checkpoints
-  #     - ../data:/app/data
-  #   environment:
-  #     - CUDA_VISIBLE_DEVICES=0,1,2,3
-  #     - WORLD_SIZE=4
-  #   deploy:
-  #     resources:
-  #       reservations:
-  #         devices:
-  #           - driver: nvidia
-  #             count: 4
-  #             capabilities: [gpu]
-  #   command: ["torchrun", "--nproc_per_node=4", "-m", "src.training.trainer"]
+      - nexus-data:/var/data
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL
+    pids_limit: 128
+    restart: unless-stopped
+volumes:
+  nexus-data:

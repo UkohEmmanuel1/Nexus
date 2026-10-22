@@ -1,5 +1,7 @@
 import asyncio
 import logging
+import ipaddress
+import socket
 from collections.abc import Generator
 from dataclasses import dataclass, field
 from datetime import datetime
@@ -51,7 +53,8 @@ class WebCrawler:
         if self._client is None or self._client.is_closed:
             self._client = httpx.AsyncClient(
                 timeout=httpx.Timeout(15.0, connect=10.0),
-                follow_redirects=True,
+                follow_redirects=False,
+                trust_env=False,
                 headers={"User-Agent": self.user_agent},
             )
         return self._client
@@ -78,6 +81,10 @@ class WebCrawler:
 
     async def crawl(self, task: CrawlTask) -> CrawlResult:
         url = task.url
+        try:
+            await asyncio.to_thread(self._validate_public_url, url)
+        except (ValueError, OSError):
+            return CrawlResult(url=url, status_code=403, error="URL must resolve to a public HTTP(S) host")
         if self._is_visited(url):
             return CrawlResult(url=url, status_code=304, error="already visited")
         if task.depth > task.max_depth:
@@ -85,7 +92,15 @@ class WebCrawler:
         self._mark_visited(url)
         client = self._get_client()
         try:
-            resp = await client.get(url, timeout=task.timeout)
+            # Do not follow redirects into private networks. Bound downloaded bytes,
+            # rather than slicing a fully buffered response after downloading it.
+            async with client.stream("GET", url, timeout=task.timeout) as response:
+                data = bytearray()
+                async for chunk in response.aiter_bytes():
+                    data.extend(chunk)
+                    if len(data) > 1_000_000:
+                        return CrawlResult(url=url, status_code=413, error="page too large")
+                resp = httpx.Response(response.status_code, headers=response.headers, content=data)
             if resp.status_code != 200:
                 return CrawlResult(
                     url=url, status_code=resp.status_code, error=f"HTTP {resp.status_code}"
@@ -113,7 +128,18 @@ class WebCrawler:
             return CrawlResult(url=url, status_code=408, error="timeout")
         except Exception as e:
             logger.error(f"Crawl failed for {url}: {e}")
-            return CrawlResult(url=url, status_code=500, error=str(e))
+            return CrawlResult(url=url, status_code=500, error="crawl failed")
+
+    @staticmethod
+    def _validate_public_url(url: str) -> None:
+        parsed = urlparse(url)
+        if parsed.scheme not in ("http", "https") or not parsed.hostname:
+            raise ValueError("invalid URL")
+        if parsed.username or parsed.password or parsed.port not in (None, 80, 443):
+            raise ValueError("unsupported URL")
+        addresses = socket.getaddrinfo(parsed.hostname, parsed.port or 443, type=socket.SOCK_STREAM)
+        if not addresses or any(not ipaddress.ip_address(item[4][0]).is_global for item in addresses):
+            raise ValueError("private or reserved address")
 
     async def crawl_batch(self, urls: list[str], max_depth: int = 1) -> list[CrawlResult]:
         tasks = [

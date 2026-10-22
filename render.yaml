@@ -1,0 +1,30 @@
+services:
+  - type: web
+    name: nexus
+    runtime: docker
+    plan: standard
+    dockerfilePath: ./docker/Dockerfile
+    dockerContext: .
+    healthCheckPath: /health
+    numInstances: 1
+    envVars:
+      - key: NEXUS_ADMIN_KEY
+        generateValue: true
+      - key: NEXUS_API_KEY
+        generateValue: true
+      - key: NEXUS_MODEL_BACKEND
+        value: gguf
+      - key: NEXUS_MODEL_REPO
+        value: Qwen/Qwen2.5-1.5B-Instruct-GGUF
+      - key: NEXUS_MODEL_FILE
+        value: qwen2.5-1.5b-instruct-q4_k_m.gguf
+      - key: NEXUS_MODEL_REVISION
+        value: 91cad51170dc346986eccefdc2dd33a9da36ead9
+      - key: NEXUS_ENABLE_CRAWLER
+        value: "0"
+      - key: NEXUS_CORS_ORIGINS
+        value: ""
+    disk:
+      name: nexus-data
+      mountPath: /var/data
+      sizeGB: 5

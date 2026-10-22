@@ -1,12 +1,10 @@
 import type { Metadata } from "next";
-import { Inter } from "next/font/google";
 import "./globals.css";
 
-const inter = Inter({ subsets: ["latin"] });
 
 export const metadata: Metadata = {
   title: "Nexus AI Console",
-  description: "DeepSeek-style Chat and API Key Dashboard for Nexus Local LLM",
+  description: "Private AI chat and API key management for Nexus",
 };
 
 export default function RootLayout({
@@ -16,7 +14,7 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en" className="h-full dark">
-      <body className={`${inter.className} h-full text-slate-200 antialiased`}>
+      <body className={`h-full text-slate-200 antialiased`}>
         {children}
       </body>
     </html>

@@ -1,5 +1,14 @@
 # Nexus
 
+## Hosted chat deployment
+
+For the secured chat console and CPU GGUF backend, use the root `render.yaml`
+and [Render deployment guide](docs/render.md). The deployment serves the frontend
+and API together, requires authentication, hashes stored API credentials, and
+disables crawling by default. It needs a paid server and persistent disk.
+The capabilities below describe the broader research framework; they are not
+all available through the hosted chat API.
+
 **Open-source, scalable, production-ready Large Language Model** — designed to match frontier model capabilities including thinking-native reasoning, 1M+ token context, multimodality, code execution, and advanced agent orchestration.
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
