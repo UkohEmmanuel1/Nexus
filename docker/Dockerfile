@@ -1,11 +1,3 @@
-FROM node:22-bookworm-slim AS frontend
-WORKDIR /frontend
-COPY frontend/package*.json ./
-RUN npm ci
-COPY frontend/ ./
-ENV NEXT_TELEMETRY_DISABLED=1
-RUN npm run build
-
 FROM python:3.12-slim-bookworm AS builder
 RUN apt-get update && apt-get install -y --no-install-recommends build-essential cmake && rm -rf /var/lib/apt/lists/*
 WORKDIR /build
@@ -20,10 +12,9 @@ COPY --from=builder /wheels /wheels
 RUN pip install --no-cache-dir --no-index --find-links=/wheels /wheels/*.whl && rm -rf /wheels
 WORKDIR /app
 COPY --chown=nexus:nexus src/ ./src/
-COPY --from=frontend --chown=nexus:nexus /frontend/out ./frontend/out
 RUN mkdir -p /var/data && chown nexus:nexus /var/data
 ENV PYTHONUNBUFFERED=1 PYTHONDONTWRITEBYTECODE=1 \
-    NEXUS_MODEL_BACKEND=gguf NEXUS_STATIC_DIR=/app/frontend/out \
+    NEXUS_MODEL_BACKEND=gguf \
     NEXUS_KEYS_DB=/var/data/nexus_keys.db HF_HOME=/var/data/huggingface \
     NEXUS_WEB_INDEX_DB=/var/data/nexus_web_index.db NEXUS_ENABLE_CRAWLER=0
 USER nexus

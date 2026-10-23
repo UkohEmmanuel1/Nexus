@@ -253,7 +253,75 @@ def test_model_concurrency_is_rejected(mock_engine):
         assert client.get("/health").status_code == 200
         result = client.post("/chat", json={"message": "second"}, headers={"X-API-Key": "master"})
         assert result.status_code == 503
+        stream = client.post(
+            "/chat/stream", json={"message": "second"}, headers={"X-API-Key": "master"}
+        )
+        assert stream.status_code == 503
     finally:
         release.set()
         thread.join(10)
     assert results[0].status_code == 200
+
+
+def test_validation_errors_do_not_echo_credentials(mock_engine, monkeypatch):
+    monkeypatch.setenv("NEXUS_ADMIN_KEY", "admin")
+    client = TestClient(create_app(mock_engine, api_key="master"))
+    secret = "sensitive-value-" * 30
+    result = client.post("/v1/keys/revoke", json={"key": secret}, headers={"X-API-Key": "admin"})
+    assert result.status_code == 422
+    assert secret not in result.text
+    assert "input" not in result.text
+
+
+def test_internal_errors_are_redacted_and_lock_recovers(mock_engine):
+    client = TestClient(create_app(mock_engine, api_key="master"))
+    mock_engine.generate.side_effect = RuntimeError("private path and secret")
+    result = client.post("/chat/stream", json={"message": "hi"}, headers={"X-API-Key": "master"})
+    assert result.status_code == 500
+    assert "private" not in result.text
+    assert result.headers["X-Content-Type-Options"] == "nosniff"
+    mock_engine.generate.side_effect = lambda *args, **kwargs: "recovered"
+    result = client.post("/chat", json={"message": "hi"}, headers={"X-API-Key": "master"})
+    assert result.status_code == 200
+
+
+def test_stream_completion_releases_model(mock_engine):
+    client = TestClient(create_app(mock_engine, api_key="master"))
+    result = client.post("/chat/stream", json={"message": "hi"}, headers={"X-API-Key": "master"})
+    assert result.status_code == 200
+    assert "[DONE]" in result.text
+    assert (
+        client.post("/chat", json={"message": "hi"}, headers={"X-API-Key": "master"}).status_code
+        == 200
+    )
+
+
+def test_invalid_credentials_are_throttled(mock_engine):
+    client = TestClient(create_app(mock_engine, api_key="master"))
+    for _ in range(300):
+        assert client.post("/chat", json={"message": "hi"}).status_code == 401
+    result = client.post("/chat", json={"message": "hi"})
+    assert result.status_code == 429
+    assert result.headers["Retry-After"] == "60"
+
+
+def test_disabled_crawler_does_not_open_database(mock_engine, monkeypatch):
+    monkeypatch.delenv("NEXUS_ENABLE_CRAWLER", raising=False)
+    monkeypatch.setattr("src.inference.server.WebIndex", MagicMock(side_effect=AssertionError))
+    client = TestClient(create_app(mock_engine, api_key="master"))
+    assert client.get("/health").status_code == 200
+
+
+def test_crawl_data_query_limits(mock_engine, monkeypatch, tmp_path):
+    from src.agents.web_crawler import CrawlResult
+    from src.rag.web_index import WebIndex
+
+    path = str(tmp_path / "web.db")
+    WebIndex(path).index_results([CrawlResult(url=f"https://example.com/{i}") for i in range(3)])
+    monkeypatch.setenv("NEXUS_WEB_INDEX_DB", path)
+    monkeypatch.setenv("NEXUS_ENABLE_CRAWLER", "1")
+    client = TestClient(create_app(mock_engine, api_key="master"))
+    headers = {"X-API-Key": "master"}
+    assert len(client.get("/crawl/data?limit=2", headers=headers).json()["data"]) == 2
+    for limit in (0, -1, 101):
+        assert client.get(f"/crawl/data?limit={limit}", headers=headers).status_code == 422

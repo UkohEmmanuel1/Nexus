@@ -3,6 +3,7 @@ import os
 import secrets
 import sqlite3
 import time
+from contextlib import contextmanager
 
 
 class KeyManager:
@@ -10,8 +11,17 @@ class KeyManager:
         self.db_path = db_path or os.environ.get("NEXUS_KEYS_DB", "nexus_keys.db")
         self._init_db()
 
+    @contextmanager
+    def _connect(self):
+        connection = sqlite3.connect(self.db_path, timeout=5)
+        try:
+            with connection:
+                yield connection
+        finally:
+            connection.close()
+
     def _init_db(self):
-        with sqlite3.connect(self.db_path) as conn:
+        with self._connect() as conn:
             conn.execute("PRAGMA secure_delete=ON")
             conn.execute("""
                 CREATE TABLE IF NOT EXISTS api_keys (
@@ -35,7 +45,7 @@ class KeyManager:
 
     def generate_key(self, name: str) -> str:
         key = f"nexus_sk_{secrets.token_hex(24)}"
-        with sqlite3.connect(self.db_path) as conn:
+        with self._connect() as conn:
             conn.execute(
                 "INSERT INTO api_keys (key, name, created_at) VALUES (?, ?, ?)",
                 (self._digest(key), name, time.time()),
@@ -44,7 +54,7 @@ class KeyManager:
         return key
 
     def validate_key(self, key: str) -> bool:
-        with sqlite3.connect(self.db_path) as conn:
+        with self._connect() as conn:
             cursor = conn.cursor()
             cursor.execute(
                 "SELECT 1 FROM api_keys WHERE key = ? AND status = 'active'", (self._digest(key),)
@@ -52,7 +62,7 @@ class KeyManager:
             return cursor.fetchone() is not None
 
     def revoke_key(self, key: str) -> bool:
-        with sqlite3.connect(self.db_path) as conn:
+        with self._connect() as conn:
             cursor = conn.cursor()
             cursor.execute(
                 "UPDATE api_keys SET status = 'revoked' WHERE key = ? AND status = 'active'",
@@ -62,14 +72,14 @@ class KeyManager:
             return cursor.rowcount > 0
 
     def list_keys(self) -> list[dict]:
-        with sqlite3.connect(self.db_path) as conn:
+        with self._connect() as conn:
             conn.row_factory = sqlite3.Row
             cursor = conn.cursor()
             cursor.execute("SELECT key AS id, name, created_at, status FROM api_keys")
             return [dict(row) for row in cursor.fetchall()]
 
     def revoke_by_id(self, key_id: str) -> bool:
-        with sqlite3.connect(self.db_path) as conn:
+        with self._connect() as conn:
             cursor = conn.execute(
                 "UPDATE api_keys SET status = 'revoked' WHERE key = ? AND status = 'active'",
                 (key_id,),

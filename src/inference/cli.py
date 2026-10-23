@@ -1,5 +1,6 @@
 import argparse
 import os
+from pathlib import Path
 
 import torch
 
@@ -15,6 +16,9 @@ def load_model(
     device: str,
 ) -> tuple[InferenceEngine, ModelConfig]:
     print("Loading model...")
+    for label, path in (("Model checkpoint", model_path), ("Tokenizer", tokenizer_path)):
+        if not Path(path).is_file():
+            raise FileNotFoundError(f"{label} not found: {path}")
     config = ModelConfig()
     if config_path:
         import yaml

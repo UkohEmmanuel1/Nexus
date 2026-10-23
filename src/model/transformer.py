@@ -1,6 +1,6 @@
 import torch
 import torch.nn as nn
-import torch.nn.functional as F
+from torch.nn import functional
 
 from .config import ModelConfig
 from .context import HierarchicalMemory, create_long_context_mask
@@ -91,9 +91,10 @@ class Transformer(nn.Module):
 
         total_len = h.shape[1]
         mask = None
-        if seq_len > 1 and start_pos == 0:
+        if seq_len > 1:
             if (
-                self.config.long_context.enabled
+                start_pos == 0
+                and self.config.long_context.enabled
                 and total_len > self.config.long_context.sliding_window_size
             ):
                 mask = create_long_context_mask(
@@ -150,13 +151,15 @@ class Transformer(nn.Module):
 
         self.init_kv_cache(
             batch_size,
-            self.config.effective_max_seq_len,
+            min(
+                self.config.effective_max_seq_len,
+                input_ids.shape[1] + max_new_tokens + (thinking_budget + 2 if thinking_mode else 0),
+            ),
             device,
             next(self.parameters()).dtype,
         )
 
         generated = input_ids.clone()
-        input_ids.shape[1]
         start_pos = 0
         thinking_text = ""
         in_thinking = False
@@ -167,71 +170,73 @@ class Transformer(nn.Module):
             in_thinking = True
             thinking_budget_remaining = thinking_budget
 
-        for step in range(max_new_tokens + (thinking_budget if thinking_mode else 0)):
-            if start_pos == 0:
-                logits, _ = self.forward(
-                    generated[:, start_pos:],
-                    start_pos=0,
-                    use_cache=True,
-                )
-            else:
-                logits, _ = self.forward(
-                    generated[:, -1:],
-                    start_pos=start_pos,
-                    use_cache=True,
-                )
-
-            next_logits = logits[:, -1, :]
-
-            if repetition_penalty != 1.0:
-                for i in range(batch_size):
-                    for token_id in generated[i].tolist():
-                        if token_id in (pad_token_id, eos_token_id):
-                            continue
-                        if next_logits[i, token_id] < 0:
-                            next_logits[i, token_id] *= repetition_penalty
-                        else:
-                            next_logits[i, token_id] /= repetition_penalty
-
-            next_logits = next_logits / temperature
-
-            if top_k > 0:
-                values, _ = torch.topk(next_logits, min(top_k, next_logits.size(-1)))
-                next_logits[next_logits < values[:, -1:]] = float("-inf")
-
-            if top_p < 1.0:
-                sorted_logits, sorted_indices = torch.sort(next_logits, descending=True, dim=-1)
-                cumulative_probs = torch.cumsum(F.softmax(sorted_logits, dim=-1), dim=-1)
-                sorted_indices_to_remove = cumulative_probs > top_p
-                sorted_indices_to_remove[:, 1:] = sorted_indices_to_remove[:, :-1].clone()
-                sorted_indices_to_remove[:, 0] = False
-                for i in range(batch_size):
-                    indices_to_remove = sorted_indices[i][sorted_indices_to_remove[i]]
-                    next_logits[i, indices_to_remove] = float("-inf")
-
-            probs = F.softmax(next_logits, dim=-1)
-            next_token = torch.multinomial(probs, num_samples=1)
-            generated = torch.cat([generated, next_token], dim=-1)
-            start_pos += 1
-
-            if thinking_mode and in_thinking:
-                thinking_budget_remaining -= 1
-                if (
-                    next_token.item() == self.config.thinking.end_think_token_id
-                    or thinking_budget_remaining <= 0
-                ):
-                    in_thinking = False
-                    think_end = torch.tensor(
-                        [[self.config.thinking.end_think_token_id]], device=device
+        try:
+            for step in range(max_new_tokens + (thinking_budget if thinking_mode else 0)):
+                if start_pos == 0:
+                    logits, _ = self.forward(
+                        generated[:, start_pos:],
+                        start_pos=0,
+                        use_cache=True,
                     )
-                    generated = torch.cat([generated, think_end], dim=-1)
-                    start_pos += 1
-                    continue
+                else:
+                    logits, _ = self.forward(
+                        generated[:, start_pos:],
+                        start_pos=start_pos,
+                        use_cache=True,
+                    )
 
-            if not in_thinking and (next_token == eos_token_id).any():
-                break
+                next_logits = logits[:, -1, :]
 
-        self.reset_kv_cache()
+                if repetition_penalty != 1.0:
+                    for i in range(batch_size):
+                        for token_id in generated[i].tolist():
+                            if token_id in (pad_token_id, eos_token_id):
+                                continue
+                            if next_logits[i, token_id] < 0:
+                                next_logits[i, token_id] *= repetition_penalty
+                            else:
+                                next_logits[i, token_id] /= repetition_penalty
+
+                next_logits = next_logits / temperature
+
+                if top_k > 0:
+                    values, _ = torch.topk(next_logits, min(top_k, next_logits.size(-1)))
+                    next_logits[next_logits < values[:, -1:]] = float("-inf")
+
+                if top_p < 1.0:
+                    sorted_logits, sorted_indices = torch.sort(next_logits, descending=True, dim=-1)
+                    cumulative_probs = torch.cumsum(
+                        functional.softmax(sorted_logits, dim=-1), dim=-1
+                    )
+                    sorted_indices_to_remove = cumulative_probs > top_p
+                    sorted_indices_to_remove[:, 1:] = sorted_indices_to_remove[:, :-1].clone()
+                    sorted_indices_to_remove[:, 0] = False
+                    for i in range(batch_size):
+                        indices_to_remove = sorted_indices[i][sorted_indices_to_remove[i]]
+                        next_logits[i, indices_to_remove] = float("-inf")
+
+                probs = functional.softmax(next_logits, dim=-1)
+                next_token = torch.multinomial(probs, num_samples=1)
+                start_pos = generated.shape[1]
+                generated = torch.cat([generated, next_token], dim=-1)
+
+                if thinking_mode and in_thinking:
+                    thinking_budget_remaining -= 1
+                    if (
+                        next_token.item() == self.config.thinking.end_think_token_id
+                        or thinking_budget_remaining <= 0
+                    ):
+                        in_thinking = False
+                        think_end = torch.tensor(
+                            [[self.config.thinking.end_think_token_id]], device=device
+                        )
+                        generated = torch.cat([generated, think_end], dim=-1)
+                        continue
+
+                if not in_thinking and (next_token == eos_token_id).any():
+                    break
+        finally:
+            self.reset_kv_cache()
 
         if return_thinking:
             return generated, thinking_text
@@ -283,7 +288,7 @@ class Transformer(nn.Module):
                 logits, _ = self.forward(cand)
                 shift_logits = logits[..., :-1, :].contiguous()
                 shift_labels = cand[..., 1:].contiguous()
-                loss = F.cross_entropy(
+                loss = functional.cross_entropy(
                     shift_logits.view(-1, shift_logits.size(-1)),
                     shift_labels.view(-1),
                     reduction="sum",

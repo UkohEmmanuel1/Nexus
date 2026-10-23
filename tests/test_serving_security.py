@@ -37,3 +37,9 @@ def test_gguf_context_limit_precedes_native_generation(monkeypatch):
         engine.generate("too long")
     assert error.value.status_code == 422
     native.create_chat_completion.assert_not_called()
+
+
+def test_missing_explicit_gguf_path_fails_clearly(monkeypatch, tmp_path):
+    monkeypatch.setenv("MODEL_PATH", str(tmp_path / "missing.gguf"))
+    with pytest.raises(FileNotFoundError, match="MODEL_PATH does not exist"):
+        GGUFEngine.from_environment()

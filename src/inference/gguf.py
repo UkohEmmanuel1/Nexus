@@ -19,17 +19,22 @@ class GGUFEngine:
         )
         self.tokenizer = self
         self.context_size = context_size
+        self.model_id = Path(model_path).stem
 
     @classmethod
     def from_environment(cls):
         model_path = os.environ.get("MODEL_PATH")
-        if not model_path or not Path(model_path).is_file():
+        if model_path and not Path(model_path).is_file():
+            raise FileNotFoundError(f"MODEL_PATH does not exist: {model_path}")
+        if not model_path:
             from huggingface_hub import hf_hub_download
 
             model_path = hf_hub_download(
-                repo_id=os.environ["NEXUS_MODEL_REPO"],
-                filename=os.environ["NEXUS_MODEL_FILE"],
-                revision=os.environ["NEXUS_MODEL_REVISION"],
+                repo_id=os.environ.get("NEXUS_MODEL_REPO", "Qwen/Qwen2.5-1.5B-Instruct-GGUF"),
+                filename=os.environ.get("NEXUS_MODEL_FILE", "qwen2.5-1.5b-instruct-q4_k_m.gguf"),
+                revision=os.environ.get(
+                    "NEXUS_MODEL_REVISION", "91cad51170dc346986eccefdc2dd33a9da36ead9"
+                ),
             )
         return cls(model_path)
 

@@ -53,7 +53,7 @@ class InferenceEngine:
                 top_k=top_k,
                 thinking_budget=thinking_budget,
             )
-            output_text = self.tokenizer.decode(output_ids[0].tolist())
+            output_text = self.tokenizer.decode(output_ids[0, input_tensor.shape[1] :].tolist())
 
             if return_thinking:
                 return output_text, thinking_text
@@ -66,6 +66,7 @@ class InferenceEngine:
                     output_text[:think_start] + output_text[think_end + len("</thinking>") :]
                 )
                 return clean_text
+            return output_text
 
         output_ids = self.model.generate(
             input_tensor,
@@ -76,13 +77,14 @@ class InferenceEngine:
             repetition_penalty=repetition_penalty,
         )
 
-        output_text = self.tokenizer.decode(output_ids[0].tolist())
+        output_text = self.tokenizer.decode(output_ids[0, input_tensor.shape[1] :].tolist())
         if stop_strings:
             for stop in stop_strings:
                 if stop in output_text:
                     output_text = output_text[: output_text.index(stop)]
         return output_text
 
+    @torch.no_grad()
     def _generate_stream(
         self,
         input_tensor: torch.Tensor,
@@ -97,7 +99,10 @@ class InferenceEngine:
     ) -> Generator[str, None, None]:
         self.model.init_kv_cache(
             input_tensor.shape[0],
-            self.model.config.effective_max_seq_len,
+            min(
+                self.model.config.effective_max_seq_len,
+                input_tensor.shape[1] + max_new_tokens + (thinking_budget if thinking_mode else 0),
+            ),
             self.device,
             next(self.model.parameters()).dtype,
         )
@@ -110,63 +115,64 @@ class InferenceEngine:
 
         total_budget = max_new_tokens + (thinking_budget if thinking_mode else 0)
 
-        for _ in range(total_budget):
-            if start_pos == 0:
-                logits, _ = self.model.forward(
-                    generated[:, start_pos:], start_pos=0, use_cache=True
-                )
-            else:
-                logits, _ = self.model.forward(
-                    generated[:, -1:], start_pos=start_pos, use_cache=True
-                )
+        try:
+            for _ in range(total_budget):
+                if start_pos == 0:
+                    logits, _ = self.model.forward(
+                        generated[:, start_pos:], start_pos=0, use_cache=True
+                    )
+                else:
+                    logits, _ = self.model.forward(
+                        generated[:, start_pos:], start_pos=start_pos, use_cache=True
+                    )
 
-            next_logits = logits[:, -1, :] / temperature
+                next_logits = logits[:, -1, :] / temperature
 
-            if top_k > 0:
-                values, _ = torch.topk(next_logits, min(top_k, next_logits.size(-1)))
-                next_logits[next_logits < values[:, -1:]] = float("-inf")
+                if top_k > 0:
+                    values, _ = torch.topk(next_logits, min(top_k, next_logits.size(-1)))
+                    next_logits[next_logits < values[:, -1:]] = float("-inf")
 
-            if top_p < 1.0:
-                sorted_logits, sorted_indices = torch.sort(next_logits, descending=True, dim=-1)
-                cumulative_probs = torch.cumsum(
-                    torch.nn.functional.softmax(sorted_logits, dim=-1), dim=-1
-                )
-                sorted_indices_to_remove = cumulative_probs > top_p
-                sorted_indices_to_remove[:, 1:] = sorted_indices_to_remove[:, :-1].clone()
-                sorted_indices_to_remove[:, 0] = False
-                for i in range(input_tensor.shape[0]):
-                    indices_to_remove = sorted_indices[i][sorted_indices_to_remove[i]]
-                    next_logits[i, indices_to_remove] = float("-inf")
+                if top_p < 1.0:
+                    sorted_logits, sorted_indices = torch.sort(next_logits, descending=True, dim=-1)
+                    cumulative_probs = torch.cumsum(
+                        torch.nn.functional.softmax(sorted_logits, dim=-1), dim=-1
+                    )
+                    sorted_indices_to_remove = cumulative_probs > top_p
+                    sorted_indices_to_remove[:, 1:] = sorted_indices_to_remove[:, :-1].clone()
+                    sorted_indices_to_remove[:, 0] = False
+                    for i in range(input_tensor.shape[0]):
+                        indices_to_remove = sorted_indices[i][sorted_indices_to_remove[i]]
+                        next_logits[i, indices_to_remove] = float("-inf")
 
-            probs = torch.nn.functional.softmax(next_logits, dim=-1)
-            next_token = torch.multinomial(probs, num_samples=1)
-            generated = torch.cat([generated, next_token], dim=-1)
-            start_pos += 1
+                probs = torch.nn.functional.softmax(next_logits, dim=-1)
+                next_token = torch.multinomial(probs, num_samples=1)
+                start_pos = generated.shape[1]
+                generated = torch.cat([generated, next_token], dim=-1)
 
-            token_str = self.tokenizer.decode([next_token.item()])
+                token_str = self.tokenizer.decode([next_token.item()])
 
-            if in_thinking:
-                thinking_remaining -= 1
-                if (
-                    next_token.item() == self.model.config.thinking.end_think_token_id
-                    or thinking_remaining <= 0
-                ):
-                    in_thinking = False
-                    yield "\n"
-                continue
+                if in_thinking:
+                    thinking_remaining -= 1
+                    if (
+                        next_token.item() == self.model.config.thinking.end_think_token_id
+                        or thinking_remaining <= 0
+                    ):
+                        in_thinking = False
+                        yield "\n"
+                    continue
 
-            output_text += token_str
-            yield token_str
+                output_text += token_str
+                yield token_str
 
-            if next_token.item() == self.tokenizer.eos_id:
-                break
+                if next_token.item() == self.tokenizer.eos_id:
+                    break
 
-            if stop_strings:
-                for stop in stop_strings:
-                    if stop in output_text:
-                        return
-
-        self.model.reset_kv_cache()
+                if stop_strings:
+                    for stop in stop_strings:
+                        if stop in output_text:
+                            return
+        finally:
+            self.model.reset_kv_cache()
 
     def deep_think(
         self, prompt: str, max_new_tokens: int = 512, n_hypotheses: int = 3
@@ -180,7 +186,7 @@ class InferenceEngine:
             temperature=0.7,
             n_hypotheses=n_hypotheses,
         )
-        output_text = self.tokenizer.decode(output_ids[0].tolist())
+        output_text = self.tokenizer.decode(output_ids[0, input_tensor.shape[1] :].tolist())
         return output_text, report
 
     def chat(self, messages: list[dict], **kwargs) -> str:

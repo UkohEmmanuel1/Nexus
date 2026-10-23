@@ -1,6 +1,6 @@
 import asyncio
-import logging
 import ipaddress
+import logging
 import socket
 from collections.abc import Generator
 from dataclasses import dataclass, field
@@ -84,7 +84,9 @@ class WebCrawler:
         try:
             await asyncio.to_thread(self._validate_public_url, url)
         except (ValueError, OSError):
-            return CrawlResult(url=url, status_code=403, error="URL must resolve to a public HTTP(S) host")
+            return CrawlResult(
+                url=url, status_code=403, error="URL must resolve to a public HTTP(S) host"
+            )
         if self._is_visited(url):
             return CrawlResult(url=url, status_code=304, error="already visited")
         if task.depth > task.max_depth:
@@ -138,10 +140,16 @@ class WebCrawler:
         if parsed.username or parsed.password or parsed.port not in (None, 80, 443):
             raise ValueError("unsupported URL")
         addresses = socket.getaddrinfo(parsed.hostname, parsed.port or 443, type=socket.SOCK_STREAM)
-        if not addresses or any(not ipaddress.ip_address(item[4][0]).is_global for item in addresses):
+        if not addresses or any(
+            not ipaddress.ip_address(item[4][0]).is_global for item in addresses
+        ):
             raise ValueError("private or reserved address")
 
-    async def crawl_batch(self, urls: list[str], max_depth: int = 1) -> list[CrawlResult]:
+    async def crawl_batch(
+        self, urls: list[str], max_depth: int = 1, refresh: bool = False
+    ) -> list[CrawlResult]:
+        if refresh:
+            self._visited.difference_update(urls)
         tasks = [
             CrawlTask(url=url, depth=0, max_depth=max_depth)
             for url in urls
@@ -209,7 +217,10 @@ class WebCrawler:
                     result = await self.crawl(task)
                     if result.status_code == 200:
                         child_results = await self._crawl_worker_pool(
-                            [CrawlTask(url=link, depth=1, max_depth=max_depth) for link in result.links],  # noqa: E501
+                            [
+                                CrawlTask(url=link, depth=1, max_depth=max_depth)
+                                for link in result.links
+                            ],  # noqa: E501
                         )
                         yield [result] + child_results
                     else:

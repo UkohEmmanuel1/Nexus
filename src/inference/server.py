@@ -1,30 +1,30 @@
+import asyncio
 import json
+import logging
 import os
 import secrets
 import threading
-import time
-from collections import defaultdict
-from contextlib import contextmanager
-from pathlib import Path
+from contextlib import asynccontextmanager, contextmanager, suppress
 from typing import TYPE_CHECKING
 
-from fastapi import FastAPI, HTTPException, Request
+import anyio
+from fastapi import FastAPI, HTTPException, Query, Request
+from fastapi.exceptions import RequestValidationError
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse, StreamingResponse
-from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel, Field
+from starlette.background import BackgroundTask
 
 from src.agents.crawl_scheduler import CrawlScheduler
 from src.agents.web_crawler import CrawlTask, WebCrawler
+from src.inference.security import WindowLimiter
 
 if TYPE_CHECKING:
     from src.inference.engine import InferenceEngine
 from src.rag.web_index import WebIndex
 from src.utils.key_manager import KeyManager
 
-crawler = WebCrawler()
-scheduler = CrawlScheduler(crawler)
-web_index = WebIndex(os.environ.get("NEXUS_WEB_INDEX_DB", "nexus_web_index.db"))
+logger = logging.getLogger(__name__)
 
 
 def create_app(
@@ -40,16 +40,44 @@ def create_app(
         raise ValueError("Set NEXUS_ADMIN_KEY or NEXUS_API_KEY before starting the server")
     if rate_limit < 1:
         raise ValueError("rate_limit must be positive")
+    crawler_enabled = os.environ.get("NEXUS_ENABLE_CRAWLER") == "1"
+    crawler = WebCrawler()
+    scheduler = CrawlScheduler(crawler)
+    web_index = (
+        WebIndex(os.environ.get("NEXUS_WEB_INDEX_DB", "nexus_web_index.db"))
+        if crawler_enabled
+        else None
+    )
+
+    @asynccontextmanager
+    async def lifespan(app):
+        worker = None
+        if crawler_enabled:
+            scheduler.set_on_crawl_callback(web_index.index_results)
+            worker = asyncio.create_task(scheduler.start())
+        try:
+            yield
+        finally:
+            await scheduler.stop()
+            if worker is not None:
+                worker.cancel()
+                with suppress(asyncio.CancelledError):
+                    await worker
+            await crawler.close()
+
     app = FastAPI(
-        title="Nexus API", version="0.1.0", docs_url=None, redoc_url=None, openapi_url=None
+        title="Nexus API",
+        version="0.1.0",
+        docs_url=None,
+        redoc_url=None,
+        openapi_url=None,
+        lifespan=lifespan,
     )
 
     app.add_middleware(
         CORSMiddleware,
         allow_origins=[
-            s.strip()
-            for s in os.environ.get("NEXUS_CORS_ORIGINS", "http://localhost:3000").split(",")
-            if s.strip()
+            s.strip() for s in os.environ.get("NEXUS_CORS_ORIGINS", "").split(",") if s.strip()
         ],
         allow_credentials=False,
         allow_methods=["GET", "POST"],
@@ -58,6 +86,9 @@ def create_app(
 
     key_manager = KeyManager()
     engine_lock = threading.Lock()
+    model_id = getattr(engine, "model_id", "nexus")
+    if not isinstance(model_id, str):
+        model_id = "nexus"
 
     @contextmanager
     def generation_slot():
@@ -71,8 +102,12 @@ def create_app(
     def provided_key(request: Request) -> str:
         auth_header = request.headers.get("Authorization", "")
         if auth_header.startswith("Bearer "):
-            return auth_header[7:]
-        return request.headers.get("X-API-Key", "")
+            provided = auth_header[7:]
+        else:
+            provided = request.headers.get("X-API-Key", "")
+        if len(provided) > 256:
+            raise HTTPException(401, "unauthorized")
+        return provided
 
     async def check_admin(request: Request):
         if not secrets.compare_digest(provided_key(request).encode(), admin_key.encode()):
@@ -86,22 +121,17 @@ def create_app(
             return
         raise HTTPException(401, "unauthorized")
 
-    rate_store: dict[str, list[float]] = defaultdict(list)
+    credential_limiter = WindowLimiter(rate_limit)
+    authentication_limiter = WindowLimiter(300)
 
-    async def check_rate_limit(request: Request):
-        key = KeyManager._digest(provided_key(request))
-        now = time.monotonic()
-        window = 60.0
-        for stale in list(rate_store):
-            if not rate_store[stale] or now - rate_store[stale][-1] >= window:
-                del rate_store[stale]
-        if key not in rate_store and len(rate_store) >= 10000:
-            raise HTTPException(429, "rate_limit_exceeded")
-        timestamps = rate_store[key]
-        rate_store[key] = [t for t in timestamps if now - t < window]
-        if len(rate_store[key]) >= rate_limit:
-            raise HTTPException(429, "rate_limit_exceeded")
-        rate_store[key].append(now)
+    @app.exception_handler(RequestValidationError)
+    async def validation_error(request: Request, exc: RequestValidationError):
+        # Pydantic's default response includes the submitted input, including keys.
+        errors = [
+            {"loc": error["loc"], "type": error["type"], "msg": "Invalid value"}
+            for error in exc.errors()
+        ]
+        return JSONResponse(status_code=422, content={"detail": errors})
 
     @app.middleware("http")
     async def auth_middleware(request: Request, call_next):
@@ -109,32 +139,40 @@ def create_app(
             path = request.url.path
             is_api = path.startswith(("/chat", "/generate", "/crawl", "/v1/"))
             if is_api and request.method != "OPTIONS":
+                peer = request.client.host if request.client else "unknown"
+                authentication_limiter.check(peer)
                 if path.startswith(("/v1/keys", "/crawl")):
                     await check_admin(request)
                 else:
                     await check_auth(request)
-                await check_rate_limit(request)
-                if path.startswith("/crawl") and os.environ.get("NEXUS_ENABLE_CRAWLER") != "1":
+                credential_limiter.check(KeyManager._digest(provided_key(request)))
+                if path.startswith("/crawl") and not crawler_enabled:
                     raise HTTPException(403, "crawler disabled")
                 # Bound actual bytes read, including chunked requests.
                 body = bytearray()
-                async for chunk in request.stream():
-                    body.extend(chunk)
-                    if len(body) > 65536:
-                        raise HTTPException(413, "request too large")
+                try:
+                    with anyio.fail_after(10):
+                        async for chunk in request.stream():
+                            if len(body) + len(chunk) > 65536:
+                                raise HTTPException(413, "request too large")
+                            body.extend(chunk)
+                except TimeoutError:
+                    raise HTTPException(408, "request body timed out") from None
                 request._body = bytes(body)
             response = await call_next(request)
         except HTTPException as e:
-            response = JSONResponse(status_code=e.status_code, content={"detail": e.detail})
+            response = JSONResponse(
+                status_code=e.status_code, content={"detail": e.detail}, headers=e.headers
+            )
+        except Exception as exc:
+            logger.error("API request failed (%s)", type(exc).__name__)
+            response = JSONResponse(status_code=500, content={"detail": "Internal server error"})
         response.headers["X-Content-Type-Options"] = "nosniff"
         response.headers["X-Frame-Options"] = "DENY"
         response.headers["Referrer-Policy"] = "no-referrer"
         response.headers["Permissions-Policy"] = "camera=(), microphone=(), geolocation=()"
         response.headers["Content-Security-Policy"] = (
-            "default-src 'self'; script-src 'self' 'unsafe-inline'; "
-            "style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self'; "
-            "connect-src 'self' https: http://localhost:8000; "
-            "frame-ancestors 'none'; base-uri 'self'; form-action 'self'"
+            "default-src 'none'; frame-ancestors 'none'; base-uri 'none'; form-action 'none'"
         )
         if is_api:
             response.headers["Cache-Control"] = "no-store"
@@ -175,22 +213,24 @@ def create_app(
         task_name: str | None = None
 
     def _usage(prompt_text: str, response_text: str) -> dict:
+        prompt_tokens = len(engine.tokenizer.encode(prompt_text))
+        completion_tokens = len(engine.tokenizer.encode(response_text))
         return {
-            "prompt_tokens": len(engine.tokenizer.encode(prompt_text)),
-            "completion_tokens": len(engine.tokenizer.encode(response_text)),
-            "total_tokens": len(engine.tokenizer.encode(prompt_text + response_text)),
+            "prompt_tokens": prompt_tokens,
+            "completion_tokens": completion_tokens,
+            "total_tokens": prompt_tokens + completion_tokens,
         }
 
     @app.get("/health")
     async def health():
         return {
             "status": "ok",
-            "model": "nexus",
+            "model": model_id,
         }
 
     @app.get("/models")
     async def list_models():
-        return {"models": ["nexus-3b"]}
+        return {"models": [model_id]}
 
     @app.post("/v1/keys/generate")
     async def generate_key(req: GenerateKeyRequest, request: Request):
@@ -231,8 +271,47 @@ def create_app(
         return {"response": response, "thinking": thinking, "usage": _usage(req.message, response)}
 
     @app.post("/chat/stream")
-    async def chat_stream(req: ChatRequest):
-        return StreamingResponse(_stream_chat(engine, req), media_type="text/event-stream")
+    def chat_stream(req: ChatRequest):
+        if not engine_lock.acquire(blocking=False):
+            raise HTTPException(503, "model busy; retry shortly")
+        released = False
+
+        def release():
+            nonlocal released
+            if not released:
+                released = True
+                engine_lock.release()
+
+        try:
+            tokens = iter(
+                engine.generate(
+                    req.message,
+                    max_new_tokens=req.max_tokens,
+                    temperature=req.temperature,
+                    stream=True,
+                    thinking_mode=req.thinking,
+                )
+            )
+            first = next(tokens, None)
+        except Exception:
+            release()
+            raise
+
+        def stream():
+            try:
+                if first is not None:
+                    yield f"data: {json.dumps({'token': first})}\n\n"
+                for token in tokens:
+                    yield f"data: {json.dumps({'token': token})}\n\n"
+                yield "data: [DONE]\n\n"
+            except Exception:
+                yield f"data: {json.dumps({'error': 'Generation failed'})}\n\n"
+            finally:
+                release()
+
+        return StreamingResponse(
+            stream(), media_type="text/event-stream", background=BackgroundTask(release)
+        )
 
     @app.post("/generate")
     def generate(req: GenerateRequest):
@@ -241,18 +320,6 @@ def create_app(
                 req.prompt, max_new_tokens=req.max_tokens, temperature=req.temperature
             )
         return {"text": output, "usage": _usage(req.prompt, output)}
-
-    def _stream_chat(engine, req):
-        with generation_slot():
-            for token_str in engine.generate(
-                req.message,
-                max_new_tokens=req.max_tokens,
-                temperature=req.temperature,
-                stream=True,
-                thinking_mode=req.thinking,
-            ):
-                yield f"data: {json.dumps({'token': token_str})}\n\n"
-        yield "data: [DONE]\n\n"
 
     @app.post("/crawl")
     async def crawl(req: CrawlRequest):
@@ -304,11 +371,14 @@ def create_app(
         return {"scheduler": scheduler.get_status(), "stats": web_index.get_stats()}
 
     @app.get("/crawl/data")
-    async def crawl_data(query: str | None = None, limit: int = 10):
+    async def crawl_data(
+        query: str | None = Query(default=None, max_length=1000),
+        limit: int = Query(default=10, ge=1, le=100),
+    ):
         if query:
             results = web_index.search(query, limit=limit)
         else:
-            urls = web_index.get_all_urls()
+            urls = web_index.get_all_urls(limit=limit)
             results = [{"url": u} for u in urls]
         return {"data": results}
 
@@ -335,11 +405,6 @@ def create_app(
 
         return StreamingResponse(_stream(), media_type="text/event-stream")
 
-    static_dir = os.environ.get("NEXUS_STATIC_DIR")
-    if static_dir:
-        if not Path(static_dir, "index.html").is_file():
-            raise ValueError("NEXUS_STATIC_DIR must contain the built frontend")
-        app.mount("/", StaticFiles(directory=static_dir, html=True), name="frontend")
     return app
 
 

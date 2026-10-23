@@ -2,7 +2,7 @@
 
 See [the Render deployment guide](render.md) for the supported secured chat
 configuration, environment variables, operational limits, and publishing steps.
-The root `render.yaml` builds the frontend and a CPU GGUF inference server into
+The root `render.yaml` builds the API and a CPU GGUF inference server into
 one non-root Docker container. Docker Compose is also available under `docker/`.
 
 ## HTTP API

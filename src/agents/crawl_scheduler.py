@@ -46,7 +46,7 @@ class CrawlScheduler:
         while self._running:
             now = datetime.now()
             for task in self._tasks:
-                if task["status"] != "scheduled":
+                if task["status"] == "running":
                     continue
                 if task["next_run"] and now >= task["next_run"]:
                     await self._run_task(task)
@@ -57,7 +57,9 @@ class CrawlScheduler:
         task["last_run"] = datetime.now()
         logger.info(f"Running scheduled crawl: {task['name']}")
         try:
-            results = await self.crawler.crawl_batch(task["seed_urls"], max_depth=task["max_depth"])
+            results = await self.crawler.crawl_batch(
+                task["seed_urls"], max_depth=task["max_depth"], refresh=True
+            )
             task["status"] = "completed"
             task["next_run"] = datetime.now() + timedelta(seconds=task["interval"])
             if self._on_crawl_callback:
@@ -66,6 +68,8 @@ class CrawlScheduler:
         except Exception as e:
             task["status"] = "failed"
             logger.error(f"Crawl task failed: {e}")
+        finally:
+            task["next_run"] = datetime.now() + timedelta(seconds=task["interval"])
 
     async def stop(self) -> None:
         self._running = False

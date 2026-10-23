@@ -1,13 +1,13 @@
 # Nexus
 
-## Hosted chat deployment
+## API deployment
 
-For the secured chat console and CPU GGUF backend, use the root `render.yaml`
-and [Render deployment guide](docs/render.md). The deployment serves the frontend
-and API together, requires authentication, hashes stored API credentials, and
-disables crawling by default. It needs a paid server and persistent disk.
+For the secured CPU GGUF API, use the root `render.yaml` and
+[Render deployment guide](docs/render.md). Nexus is API-only; the browser
+frontend has been removed. Authentication, hashed API credentials, and disabled
+crawling remain the defaults. Deployment needs a paid server and persistent disk.
 The capabilities below describe the broader research framework; they are not
-all available through the hosted chat API.
+all available through the hosted API.
 
 **Open-source, scalable, production-ready Large Language Model** — designed to match frontier model capabilities including thinking-native reasoning, 1M+ token context, multimodality, code execution, and advanced agent orchestration.
 
@@ -75,40 +75,25 @@ nexus --model checkpoints/model.pt --tokenizer tokenizer/tokenizer.model --devic
 
 ---
 
-#### Option B: OpenAI-Compatible API Server
+#### Option B: Authenticated API Server
 Start the local FastAPI server:
 ```bash
 nexus --serve --device cpu --port 8000 --api-key sk-your-key
 ```
 
-Query the completions endpoint using `curl`:
+Query the chat endpoint using `curl`:
 ```bash
-curl http://localhost:8000/v1/chat/completions \
+curl http://localhost:8000/chat \
   -H "Content-Type: application/json" \
   -H "Authorization: Bearer sk-your-key" \
   -d '{
-    "model": "nexus",
-    "messages": [{"role": "user", "content": "Explain quantum computing in simple terms."}],
-    "stream": true
+    "message": "Explain quantum computing in simple terms."
   }'
 ```
 
 ---
 
-#### Option C: Web Frontend UI (Browser)
-Nexus includes a Next.js chat interface:
-1. Ensure the API server is running (`nexus --serve --device cpu`).
-2. Launch the frontend:
-   ```bash
-   cd frontend
-   npm install
-   npm run dev
-   ```
-3. Open `http://localhost:3000` in your web browser.
-
----
-
-#### Option D: Python SDK (Direct Code Integration)
+#### Option C: Python SDK (Direct Code Integration)
 ```python
 from src.inference.engine import InferenceEngine
 from src.model import ModelConfig, Transformer

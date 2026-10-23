@@ -39,9 +39,9 @@ class WebIndex:
         for r in results:
             try:
                 conn.execute(
-            "INSERT OR REPLACE INTO pages (url, title, content, links, "
-            "status_code, error, crawled_at, indexed_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
-            (
+                    "INSERT OR REPLACE INTO pages (url, title, content, links, "
+                    "status_code, error, crawled_at, indexed_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
+                    (
                         r.url,
                         r.title,
                         r.content,
@@ -72,10 +72,11 @@ class WebIndex:
         conn.close()
         return results
 
-    def get_all_urls(self) -> list[str]:
+    def get_all_urls(self, limit: int | None = None) -> list[str]:
         conn = sqlite3.connect(self.db_path)
-        cursor = conn.execute(
-            "SELECT url FROM pages WHERE status_code = 200 ORDER BY crawled_at DESC"
+        query = "SELECT url FROM pages WHERE status_code = 200 ORDER BY crawled_at DESC"
+        cursor = (
+            conn.execute(query) if limit is None else conn.execute(query + " LIMIT ?", (limit,))
         )
         urls = [row[0] for row in cursor.fetchall()]
         conn.close()
@@ -97,6 +98,3 @@ class WebIndex:
         conn.commit()
         conn.close()
         logger.info("Web index cleared")
-
-
-web_index = WebIndex()
