@@ -9,12 +9,12 @@ GPU hardware or downloads large local weights.
 
 ```bash
 pip install "git+https://github.com/UkohEmmanuel1/Nexus.git#subdirectory=packages/python-cli"
-nexus models
-nexus login deepseek
-nexus use deepseek deepseek-chat
-nexus chat
-nexus-ai chat "Explain dependency injection in Python"
-nexus-ai chat --file src/app.py "Review this file"
+vonk models
+vonk login deepseek
+vonk use deepseek deepseek-chat
+vonk chat
+vonk chat "Explain dependency injection in Python"
+vonk chat --file src/app.py "Review this file"
 ```
 
 Note: published PyPI installation is **not yet available**. The command above
@@ -26,11 +26,11 @@ installs directly from the GitHub source.
 git clone https://github.com/UkohEmmanuel1/Nexus.git
 cd Nexus/packages/npm-cli
 npm install -g .
-nexus-ai models
-nexus-ai login deepseek
-nexus-ai use deepseek deepseek-chat
-nexus-ai chat
-nexus-ai chat --file src/app.ts "Review this file"
+vonk models
+vonk login deepseek
+vonk use deepseek deepseek-chat
+vonk chat
+vonk chat --file src/app.ts "Review this file"
 ```
 
 Note: published npm installation is **not yet available**. A package name in
@@ -44,7 +44,7 @@ Environment variables take precedence over saved keys:
 On Linux/macOS, e.g. `export DEEPSEEK_API_KEY="..."`.
 On Windows PowerShell: `$env:DEEPSEEK_API_KEY="..."`.
 
-`nexus-ai login PROVIDER` saves a plaintext API key **on the user's
+`vonk login PROVIDER` saves a plaintext API key **on the user's
 device**, at `~/.config/nexus/keys.json`. On POSIX systems the CLI attempts
 to restrict file permissions to owner only. Environment variables or an OS
 credential manager are preferable for shared machines. The npm CLI's login
@@ -69,7 +69,7 @@ pricing, region and account permissions.
 From repository root:
 ```bash
 python -m compileall packages/python-cli/nexus_terminal src/inference/assistant_cli.py
-node --check packages/npm-cli/bin/nexus-ai.js
+node --check packages/npm-cli/bin/vonk.js
 python -m pytest tests/test_providers.py
 ```
 Live generation requires a valid upstream API key and available model quota.
@@ -93,3 +93,15 @@ After successful publishing, users can install with
 `npm install -g @YOUR_NPM_USERNAME/nexus` and launch with `nexus`.
 
 Publishing is not automatic and has not been performed by this change.
+
+## Vonk npm package
+
+The npm package manifest now declares `vonk` and its terminal executable `vonk`.
+After checking the npm registry and publishing from `packages/npm-cli`, users can run:
+
+```bash
+npm install -g vonk
+vonk
+```
+
+This is not published automatically by GitHub changes. npm publication requires registry authorization and a successful publish.
