@@ -1,5 +1,33 @@
 # Nexus
 
+## Install Nexus AI coding CLI (from source)
+
+Nexus includes lightweight interactive coding assistants for **pip** and **npm** users.
+They support choosing among AI providers, using your own API key, chatting, and
+attaching individual text files for read-only code review.
+
+Python:
+
+```bash
+pip install "git+https://github.com/UkohEmmanuel1/Nexus.git#subdirectory=packages/python-cli"
+nexus-ai models
+nexus-ai login deepseek
+nexus-ai use deepseek deepseek-chat
+nexus-ai chat
+```
+
+Node.js:
+
+```bash
+git clone https://github.com/UkohEmmanuel1/Nexus.git
+cd Nexus/packages/npm-cli
+npm install -g .
+nexus-ai chat
+```
+
+See [CLI documentation](docs/terminal.md). **These packages are not yet published
+to npm or PyPI.** This is a chat MVP, not yet an autonomous file-editing agent.
+
 ## API deployment
 
 For the secured CPU GGUF API, use the root `render.yaml` and
