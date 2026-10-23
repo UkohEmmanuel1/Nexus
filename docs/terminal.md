@@ -9,10 +9,10 @@ GPU hardware or downloads large local weights.
 
 ```bash
 pip install "git+https://github.com/UkohEmmanuel1/Nexus.git#subdirectory=packages/python-cli"
-nexus-ai models
-nexus-ai login deepseek
-nexus-ai use deepseek deepseek-chat
-nexus-ai chat
+nexus models
+nexus login deepseek
+nexus use deepseek deepseek-chat
+nexus chat
 nexus-ai chat "Explain dependency injection in Python"
 nexus-ai chat --file src/app.py "Review this file"
 ```
@@ -73,3 +73,23 @@ node --check packages/npm-cli/bin/nexus-ai.js
 python -m pytest tests/test_providers.py
 ```
 Live generation requires a valid upstream API key and available model quota.
+
+## Publishing npm CLI
+
+The npm package name `nexus` is already taken by another project. The CLI now
+exposes the executable `nexus`, but must first be published under a unique npm
+package name or a scope that you own (for example `@YOUR_NPM_USERNAME/nexus`).
+
+To publish from `packages/npm-cli` with an npm account that owns the selected
+name/scope:
+
+```bash
+npm login
+npm pkg set name='@YOUR_NPM_USERNAME/nexus'
+npm publish --access public
+```
+
+After successful publishing, users can install with
+`npm install -g @YOUR_NPM_USERNAME/nexus` and launch with `nexus`.
+
+Publishing is not automatic and has not been performed by this change.
