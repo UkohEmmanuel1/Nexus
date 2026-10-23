@@ -4,10 +4,16 @@
   "description": "Multi-provider BYOK AI coding terminal",
   "type": "module",
   "bin": {
+    "nexus": "./bin/nexus-ai.js",
     "nexus-ai": "./bin/nexus-ai.js"
   },
   "engines": {
     "node": ">=20"
   },
-  "license": "MIT"
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/UkohEmmanuel1/Nexus.git",
+    "directory": "packages/npm-cli"
+  }
 }
