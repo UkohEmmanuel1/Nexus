@@ -2,10 +2,13 @@ services:
   - type: web
     name: nexus
     runtime: docker
+    branch: main
+    autoDeployTrigger: checksPass
+    maxShutdownDelaySeconds: 120
     plan: standard
     dockerfilePath: ./docker/Dockerfile
     dockerContext: .
-    healthCheckPath: /health
+    healthCheckPath: /ready
     numInstances: 1
     envVars:
       - key: NEXUS_ADMIN_KEY
@@ -24,6 +27,8 @@ services:
         value: "0"
       - key: NEXUS_CORS_ORIGINS
         value: ""
+      - key: NEXUS_RATE_LIMIT
+        value: "60"
     disk:
       name: nexus-data
       mountPath: /var/data

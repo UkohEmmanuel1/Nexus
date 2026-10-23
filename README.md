@@ -6,10 +6,16 @@ For the secured CPU GGUF API, use the root `render.yaml` and
 [Render deployment guide](docs/render.md). Nexus is API-only; the browser
 frontend has been removed. Authentication, hashed API credentials, and disabled
 crawling remain the defaults. Deployment needs a paid server and persistent disk.
-The capabilities below describe the broader research framework; they are not
-all available through the hosted API.
+Start with the [public API guide](docs/api.md) for client integration and personal
+API keys. The root endpoint returns discovery JSON, `/openapi.json` describes the
+API, and `/ready` checks whether the service can accept traffic. The single CPU
+instance handles one generation at a time; production capacity must be measured
+before promising a user count or uptime target.
 
-**Open-source, scalable, production-ready Large Language Model** — designed to match frontier model capabilities including thinking-native reasoning, 1M+ token context, multimodality, code execution, and advanced agent orchestration.
+The capabilities below describe the broader research framework; they are not
+all available through the hosted API and are not a production certification.
+
+Nexus provides authenticated text chat and streaming with a quantized Qwen model. The repository also contains experimental training, model, and agent components.
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 [![Python 3.10+](https://img.shields.io/badge/python-3.10+-blue.svg)](pyproject.toml)
@@ -17,7 +23,7 @@ all available through the hosted API.
 
 ---
 
-## Key Features
+## Research framework components
 
 | Capability | Status |
 |-----------|--------|

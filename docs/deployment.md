@@ -9,7 +9,10 @@ one non-root Docker container. Docker Compose is also available under `docker/`.
 
 | Endpoint | Method | Authorization |
 | --- | --- | --- |
+| `/` | GET | Public API discovery |
 | `/health` | GET | Public health check |
+| `/ready` | GET | Public model/storage readiness |
+| `/openapi.json` | GET | Public API contract |
 | `/models` | GET | Public model listing |
 | `/chat` | POST | API key |
 | `/chat/stream` | POST | API key; server-sent events |

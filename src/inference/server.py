@@ -4,6 +4,8 @@ import logging
 import os
 import secrets
 import threading
+import time
+import uuid
 from contextlib import asynccontextmanager, contextmanager, suppress
 from typing import TYPE_CHECKING
 
@@ -11,6 +13,7 @@ import anyio
 from fastapi import FastAPI, HTTPException, Query, Request
 from fastapi.exceptions import RequestValidationError
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.openapi.utils import get_openapi
 from fastapi.responses import JSONResponse, StreamingResponse
 from pydantic import BaseModel, Field
 from starlette.background import BackgroundTask
@@ -30,7 +33,7 @@ logger = logging.getLogger(__name__)
 def create_app(
     engine: "InferenceEngine",
     api_key: str | None = None,
-    rate_limit: int = 60,
+    rate_limit: int | None = None,
 ) -> FastAPI:
     if api_key is None:
         api_key = os.environ.get("NEXUS_API_KEY")
@@ -38,6 +41,8 @@ def create_app(
     admin_key = os.environ.get("NEXUS_ADMIN_KEY") or api_key
     if not admin_key:
         raise ValueError("Set NEXUS_ADMIN_KEY or NEXUS_API_KEY before starting the server")
+    if rate_limit is None:
+        rate_limit = int(os.environ.get("NEXUS_RATE_LIMIT", "60"))
     if rate_limit < 1:
         raise ValueError("rate_limit must be positive")
     crawler_enabled = os.environ.get("NEXUS_ENABLE_CRAWLER") == "1"
@@ -82,6 +87,7 @@ def create_app(
         allow_credentials=False,
         allow_methods=["GET", "POST"],
         allow_headers=["Authorization", "X-API-Key", "Content-Type"],
+        expose_headers=["X-Request-ID", "Retry-After"],
     )
 
     key_manager = KeyManager()
@@ -93,7 +99,7 @@ def create_app(
     @contextmanager
     def generation_slot():
         if not engine_lock.acquire(blocking=False):
-            raise HTTPException(503, "model busy; retry shortly")
+            raise HTTPException(503, "model busy; retry shortly", headers={"Retry-After": "5"})
         try:
             yield
         finally:
@@ -117,7 +123,7 @@ def create_app(
         provided = provided_key(request)
         if api_key and secrets.compare_digest(provided.encode(), api_key.encode()):
             return
-        if provided and key_manager.validate_key(provided):
+        if provided and await anyio.to_thread.run_sync(key_manager.validate_key, provided):
             return
         raise HTTPException(401, "unauthorized")
 
@@ -135,16 +141,24 @@ def create_app(
 
     @app.middleware("http")
     async def auth_middleware(request: Request, call_next):
+        started = time.monotonic()
+        request_id = uuid.uuid4().hex
+        is_api = False
         try:
             path = request.url.path
             is_api = path.startswith(("/chat", "/generate", "/crawl", "/v1/"))
             if is_api and request.method != "OPTIONS":
                 peer = request.client.host if request.client else "unknown"
-                authentication_limiter.check(peer)
-                if path.startswith(("/v1/keys", "/crawl")):
-                    await check_admin(request)
-                else:
-                    await check_auth(request)
+                # Count failures only: valid users behind a shared proxy must
+                # not consume a single global authentication-attempt budget.
+                try:
+                    if path.startswith(("/v1/keys", "/crawl")):
+                        await check_admin(request)
+                    else:
+                        await check_auth(request)
+                except HTTPException:
+                    authentication_limiter.check(peer)
+                    raise
                 credential_limiter.check(KeyManager._digest(provided_key(request)))
                 if path.startswith("/crawl") and not crawler_enabled:
                     raise HTTPException(403, "crawler disabled")
@@ -165,9 +179,10 @@ def create_app(
                 status_code=e.status_code, content={"detail": e.detail}, headers=e.headers
             )
         except Exception as exc:
-            logger.error("API request failed (%s)", type(exc).__name__)
+            logger.error("request_id=%s failure=%s", request_id, type(exc).__name__)
             response = JSONResponse(status_code=500, content={"detail": "Internal server error"})
         response.headers["X-Content-Type-Options"] = "nosniff"
+        response.headers["X-Request-ID"] = request_id
         response.headers["X-Frame-Options"] = "DENY"
         response.headers["Referrer-Policy"] = "no-referrer"
         response.headers["Permissions-Policy"] = "camera=(), microphone=(), geolocation=()"
@@ -178,6 +193,14 @@ def create_app(
             response.headers["Cache-Control"] = "no-store"
         if os.environ.get("RENDER") or request.url.scheme == "https":
             response.headers["Strict-Transport-Security"] = "max-age=31536000"
+        # Do not log request bodies, credentials, or query strings.
+        logger.info(
+            "request_id=%s method=%s status=%s duration_ms=%.1f",
+            request_id,
+            request.method,
+            response.status_code,
+            (time.monotonic() - started) * 1000,
+        )
         return response
 
     class GenerateKeyRequest(BaseModel):
@@ -221,6 +244,28 @@ def create_app(
             "total_tokens": prompt_tokens + completion_tokens,
         }
 
+    @app.get("/", include_in_schema=False)
+    async def service_info():
+        return {
+            "service": "Nexus API",
+            "version": app.version,
+            "health": "/health",
+            "readiness": "/ready",
+            "openapi": "/openapi.json",
+            "chat": "/chat",
+            "stream": "/chat/stream",
+            "authentication": "Bearer API key; request a personal key from the operator",
+        }
+
+    @app.get("/ready", include_in_schema=False)
+    def readiness():
+        try:
+            with key_manager._connect() as connection:
+                connection.execute("SELECT 1 FROM api_keys LIMIT 1").fetchone()
+        except Exception:
+            raise HTTPException(503, "credential storage unavailable") from None
+        return {"status": "ready", "model": model_id}
+
     @app.get("/health")
     async def health():
         return {
@@ -233,19 +278,16 @@ def create_app(
         return {"models": [model_id]}
 
     @app.post("/v1/keys/generate")
-    async def generate_key(req: GenerateKeyRequest, request: Request):
-        await check_admin(request)
+    def generate_key(req: GenerateKeyRequest):
         new_key = key_manager.generate_key(req.name)
         return {"key": new_key, "name": req.name}
 
     @app.get("/v1/keys")
-    async def list_keys(request: Request):
-        await check_admin(request)
+    def list_keys():
         return key_manager.list_keys()
 
     @app.post("/v1/keys/revoke")
-    async def revoke_key(req: RevokeKeyRequest, request: Request):
-        await check_admin(request)
+    def revoke_key(req: RevokeKeyRequest):
         success = (
             key_manager.revoke_by_id(req.key)
             if req.key.startswith("sha256:")
@@ -264,16 +306,17 @@ def create_app(
                 temperature=req.temperature,
                 thinking_mode=req.thinking,
             )
-        thinking = None
-        response = output
-        if req.thinking and isinstance(output, tuple):
-            response, thinking = output
-        return {"response": response, "thinking": thinking, "usage": _usage(req.message, response)}
+            thinking = None
+            response = output
+            if req.thinking and isinstance(output, tuple):
+                response, thinking = output
+            usage = _usage(req.message, response)
+        return {"response": response, "thinking": thinking, "usage": usage}
 
     @app.post("/chat/stream")
     def chat_stream(req: ChatRequest):
         if not engine_lock.acquire(blocking=False):
-            raise HTTPException(503, "model busy; retry shortly")
+            raise HTTPException(503, "model busy; retry shortly", headers={"Retry-After": "5"})
         released = False
 
         def release():
@@ -307,10 +350,18 @@ def create_app(
             except Exception:
                 yield f"data: {json.dumps({'error': 'Generation failed'})}\n\n"
             finally:
-                release()
+                try:
+                    close = getattr(tokens, "close", None)
+                    if close is not None:
+                        close()
+                finally:
+                    release()
 
         return StreamingResponse(
-            stream(), media_type="text/event-stream", background=BackgroundTask(release)
+            stream(),
+            media_type="text/event-stream",
+            background=BackgroundTask(release),
+            headers={"X-Accel-Buffering": "no"},
         )
 
     @app.post("/generate")
@@ -319,7 +370,8 @@ def create_app(
             output = engine.generate(
                 req.prompt, max_new_tokens=req.max_tokens, temperature=req.temperature
             )
-        return {"text": output, "usage": _usage(req.prompt, output)}
+            usage = _usage(req.prompt, output)
+        return {"text": output, "usage": usage}
 
     @app.post("/crawl")
     async def crawl(req: CrawlRequest):
@@ -405,11 +457,27 @@ def create_app(
 
         return StreamingResponse(_stream(), media_type="text/event-stream")
 
+    @app.get("/openapi.json", include_in_schema=False)
+    async def api_schema():
+        schema = get_openapi(title=app.title, version=app.version, routes=app.routes)
+        schema.setdefault("components", {}).setdefault("securitySchemes", {})["ApiKey"] = {
+            "type": "http",
+            "scheme": "bearer",
+            "description": "Personal API key. Key management and crawling require the admin key.",
+        }
+        for path, operations in schema["paths"].items():
+            if path.startswith(("/chat", "/generate", "/crawl", "/v1/")):
+                for operation in operations.values():
+                    operation["security"] = [{"ApiKey": []}]
+        return schema
+
     return app
 
 
 def main():
     import uvicorn
+
+    logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(message)s")
 
     if not (os.environ.get("NEXUS_ADMIN_KEY") or os.environ.get("NEXUS_API_KEY")):
         raise ValueError("Set NEXUS_ADMIN_KEY or NEXUS_API_KEY before starting the server")
@@ -431,7 +499,18 @@ def main():
             os.environ.get("DEVICE", "cpu"),
         )
     app = create_app(engine)
-    uvicorn.run(app, host="0.0.0.0", port=int(os.environ.get("PORT", "8000")), proxy_headers=False)
+    uvicorn.run(
+        app,
+        host="0.0.0.0",
+        port=int(os.environ.get("PORT", "8000")),
+        proxy_headers=False,
+        server_header=False,
+        access_log=False,
+        limit_concurrency=100,
+        backlog=128,
+        timeout_keep_alive=5,
+        timeout_graceful_shutdown=120,
+    )
 
 
 if __name__ == "__main__":

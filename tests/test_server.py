@@ -253,6 +253,7 @@ def test_model_concurrency_is_rejected(mock_engine):
         assert client.get("/health").status_code == 200
         result = client.post("/chat", json={"message": "second"}, headers={"X-API-Key": "master"})
         assert result.status_code == 503
+        assert result.headers["Retry-After"] == "5"
         stream = client.post(
             "/chat/stream", json={"message": "second"}, headers={"X-API-Key": "master"}
         )

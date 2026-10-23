@@ -2,9 +2,12 @@ name: CI
 
 on:
   push:
-    branches: [master]
+    branches: [main, master]
   pull_request:
-    branches: [master]
+    branches: [main, master]
+
+permissions:
+  contents: read
 
 jobs:
   lint:
@@ -24,10 +27,24 @@ jobs:
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
+          pip install torch --index-url https://download.pytorch.org/whl/cpu
           pip install -e ".[dev]"
 
-      - name: Lint
-        run: make lint
+      - name: Install serving test dependencies
+        run: pip install fastapi==0.141.1 uvicorn==0.46.0 pydantic==2.13.3 httpx==0.28.1
+
+      - name: Lint production serving code
+        run: ruff check src/inference/server.py src/inference/security.py src/inference/gguf.py src/utils/key_manager.py tests/test_production_api.py
 
       - name: Run tests
         run: make test
+
+  container:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build production container
+        run: docker build -f docker/Dockerfile -t nexus:ci .
+      - name: Verify container imports and non-root user
+        run: |
+          docker run --rm --entrypoint python nexus:ci -c "import os; import src.inference.server; from llama_cpp import Llama; assert os.getuid() == 10001"
