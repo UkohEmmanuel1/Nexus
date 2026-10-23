@@ -21,6 +21,7 @@ from starlette.background import BackgroundTask
 from src.agents.crawl_scheduler import CrawlScheduler
 from src.agents.web_crawler import CrawlTask, WebCrawler
 from src.inference.security import WindowLimiter
+from src.inference.providers import PROVIDERS, EXAMPLE_MODELS, complete_byok
 
 if TYPE_CHECKING:
     from src.inference.engine import InferenceEngine
@@ -86,7 +87,7 @@ def create_app(
         ],
         allow_credentials=False,
         allow_methods=["GET", "POST"],
-        allow_headers=["Authorization", "X-API-Key", "Content-Type"],
+        allow_headers=["Authorization", "X-API-Key", "X-Provider-Key", "Content-Type"],
         expose_headers=["X-Request-ID", "Retry-After"],
     )
 
@@ -215,6 +216,17 @@ def create_app(
         temperature: float = Field(default=0.7, gt=0, le=2)
         thinking: bool = False
 
+    class ProviderMessage(BaseModel):
+        role: str = Field(pattern="^(system|user|assistant)$")
+        content: str = Field(min_length=1, max_length=16000)
+
+    class ProviderChatRequest(BaseModel):
+        provider: str = Field(min_length=1, max_length=40)
+        model: str = Field(min_length=1, max_length=200)
+        messages: list[ProviderMessage] = Field(min_length=1, max_length=30)
+        max_tokens: int = Field(default=512, ge=1, le=2048)
+        temperature: float = Field(default=0.7, ge=0, le=2)
+
     class GenerateRequest(BaseModel):
         prompt: str = Field(min_length=1, max_length=16000)
         max_tokens: int = Field(default=512, ge=1, le=2048)
@@ -296,6 +308,29 @@ def create_app(
         if not success:
             raise HTTPException(404, "key not found or already revoked")
         return {"status": "success", "message": "Key revoked successfully"}
+
+    @app.get("/v1/providers")
+    async def list_providers():
+        return {"providers": [
+            {"id": key, "example_models": EXAMPLE_MODELS.get(key, [])}
+            for key in PROVIDERS
+        ], "note": "Examples only; model availability depends on provider account."}
+
+    @app.post("/v1/chat/byok")
+    async def provider_chat(req: ProviderChatRequest, request: Request):
+        # User-supplied API key is forwarded for this request only.
+        # Do not persist it or include it in request bodies or logs.
+        provider_key = request.headers.get("X-Provider-Key", "")
+        if not provider_key:
+            raise HTTPException(400, "Missing X-Provider-Key header")
+        return await complete_byok(
+            provider=req.provider,
+            model=req.model,
+            messages=[message.model_dump() for message in req.messages],
+            provider_key=provider_key,
+            max_tokens=req.max_tokens,
+            temperature=req.temperature,
+        )
 
     @app.post("/chat")
     def chat(req: ChatRequest):
