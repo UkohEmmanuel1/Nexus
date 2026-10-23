@@ -19,7 +19,7 @@ const endpoints = {
  anthropic:'https://api.anthropic.com/v1/messages'
 };
 const examples={openai:'gpt-4.1-mini',deepseek:'deepseek-chat',groq:'llama-3.3-70b-versatile',together:'meta-llama/Llama-3.3-70B-Instruct-Turbo',fireworks:'accounts/fireworks/models/llama-v3p3-70b-instruct',openrouter:'deepseek/deepseek-chat',mistral:'mistral-small-latest',huggingface:'Qwen/Qwen2.5-72B-Instruct',google:'gemini-2.5-flash',xai:'grok-3-mini',anthropic:'claude-sonnet-4-5'};
-const dir=join(homedir(),'.config','nexus');
+const dir=join(homedir(),'.config','vonk');
 const config=join(dir,'config.json'), secrets=join(dir,'keys.json');
 async function load(p){try{return JSON.parse(await readFile(p,'utf8'))}catch{return {}}}
 async function save(p,obj,secret=false){await mkdir(dir,{recursive:true,mode:0o700});await writeFile(p,JSON.stringify(obj,null,2),{mode:secret?0o600:0o644});if(secret)await chmod(p,0o600)}
@@ -52,11 +52,11 @@ async function main(){
  for(let i=0;i<args.length;i++){if(args[i]==='--file'){files.push(args[++i]);}else prompt.push(args[i])}
  const context=[];
  for(const path of files){const full=resolve(path);if((await stat(full)).size>60000)throw Error('File over 60KB: '+path);context.push('File '+basename(full)+'\n'+await readFile(full,'utf8'))}
- let messages=[{role:'system',content:'You are Nexus, a practical coding assistant. Never claim you edited local files.\n'+context.join('\n')}];
- async function ask(q){messages.push({role:'user',content:q});try{const response=await complete(p,settings.model,messages,key);console.log('\nNexus: '+response+'\n');messages.push({role:'assistant',content:response})}catch(e){messages.pop();console.error(e.message)}}
+ let messages=[{role:'system',content:'You are Vonk, a practical coding assistant. Never claim you edited local files.\n'+context.join('\n')}];
+ async function ask(q){messages.push({role:'user',content:q});try{const response=await complete(p,settings.model,messages,key);console.log('\nVonk: '+response+'\n');messages.push({role:'assistant',content:response})}catch(e){messages.pop();console.error(e.message)}}
  if(prompt.length){await ask(prompt.join(' '));return}
  const rl=readline.createInterface({input:stdin,output:stdout});
- console.log('Nexus AI | '+p+'/'+settings.model+' | /exit /clear');
+ console.log('Vonk AI | '+p+'/'+settings.model+' | /exit /clear');
  try{while(true){const q=(await rl.question('nexus> ')).trim();if(['/exit','/quit'].includes(q))break;if(q==='/clear'){messages=messages.slice(0,1);continue}if(q)await ask(q)}}catch(e){if(e.code!=='ERR_USE_AFTER_CLOSE')throw e}finally{rl.close()}
 }
-main().catch(e=>{console.error('Nexus:',e.message);process.exitCode=1});
+main().catch(e=>{console.error('Vonk:',e.message);process.exitCode=1});
