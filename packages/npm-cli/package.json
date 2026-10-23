@@ -1,0 +1,13 @@
+{
+  "name": "@nexus-ai/cli",
+  "version": "0.1.0",
+  "description": "Multi-provider BYOK AI coding terminal",
+  "type": "module",
+  "bin": {
+    "nexus-ai": "./bin/nexus-ai.js"
+  },
+  "engines": {
+    "node": ">=20"
+  },
+  "license": "MIT"
+}
