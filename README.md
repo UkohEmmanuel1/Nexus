@@ -1,8 +1,8 @@
 # Nexus
 
-## Install Nexus AI coding CLI (from source)
+## Install Vonk coding CLI (from source)
 
-Nexus includes lightweight interactive coding assistants for **pip** and **npm** users.
+Vonk is the name of the interactive coding assistant; the Nexus repository includes lightweight CLI clients for **pip** and **npm** users.
 They support choosing among AI providers, using your own API key, chatting, and
 attaching individual text files for read-only code review.
 
