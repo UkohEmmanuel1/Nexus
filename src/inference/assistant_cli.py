@@ -1,4 +1,4 @@
-"""Lightweight Nexus terminal assistant (no torch dependency)."""
+"""Lightweight Vonk terminal assistant (no torch dependency)."""
 import argparse
 import getpass
 import json
@@ -10,8 +10,8 @@ import urllib.request
 
 from src.inference.providers import PROVIDERS, EXAMPLE_MODELS
 
-CONFIG = pathlib.Path.home() / ".config" / "nexus" / "config.json"
-KEYS = pathlib.Path.home() / ".config" / "nexus" / "keys.json"
+CONFIG = pathlib.Path.home() / ".config" / "vonk" / "config.json"
+KEYS = pathlib.Path.home() / ".config" / "vonk" / "keys.json"
 DEFAULT = {"provider": "deepseek", "model": "deepseek-chat"}
 
 
@@ -43,7 +43,7 @@ def request_chat(provider, model, messages, key):
 
 
 def main():
-    parser = argparse.ArgumentParser(prog="nexus-ai", description="Nexus AI coding terminal")
+    parser = argparse.ArgumentParser(prog="vonk", description="Vonk AI coding terminal")
     sub = parser.add_subparsers(dest="command")
     sub.add_parser("models", help="List supported API providers and example models")
     login = sub.add_parser("login", help="Save a provider API key on this machine")
@@ -91,7 +91,7 @@ def main():
         parser.error("Unsupported provider")
     key = os.environ.get(f"{provider.upper()}_API_KEY") or load(KEYS).get(provider)
     if not key:
-        print(f"No key for {provider}. Run: nexus-ai login {provider}", file=sys.stderr)
+        print(f"No key for {provider}. Run: vonk login {provider}", file=sys.stderr)
         sys.exit(2)
     context = []
     for file in args.file:
@@ -99,7 +99,7 @@ def main():
         if not path.is_file() or path.stat().st_size > 60000:
             parser.error(f"File missing or over 60 KB: {file}")
         context.append(f"File: {path.name}\n```\n{path.read_text(errors='replace')}\n```")
-    messages = [{"role": "system", "content": "You are Nexus, a practical coding assistant. Explain changes precisely; never claim to have edited files.\n" + "\n".join(context)}]
+    messages = [{"role": "system", "content": "You are Vonk, a practical coding assistant. Explain changes precisely; never claim to have edited files.\n" + "\n".join(context)}]
     def ask(prompt):
         messages.append({"role": "user", "content": prompt})
         try:
@@ -113,10 +113,10 @@ def main():
     if args.prompt:
         ask(" ".join(args.prompt))
         return
-    print(f"Nexus AI | {provider}/{model} | /exit to quit | /clear to reset")
+    print(f"Vonk AI | {provider}/{model} | /exit to quit | /clear to reset")
     while True:
         try:
-            prompt = input("nexus> ").strip()
+            prompt = input("vonk> ").strip()
         except (KeyboardInterrupt, EOFError):
             print()
             break
