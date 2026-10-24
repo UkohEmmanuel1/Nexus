@@ -94,7 +94,7 @@ def run_server(engine: InferenceEngine, args: argparse.Namespace) -> None:
 
 
 def main():
-    parser = argparse.ArgumentParser(description="Nexus CLI — Chat or serve your model")
+    parser = argparse.ArgumentParser(description="Vonk CLI — Chat or serve your model")
     parser.add_argument(
         "--model", type=str, default="checkpoints/model.pt", help="Path to model checkpoint"
     )
