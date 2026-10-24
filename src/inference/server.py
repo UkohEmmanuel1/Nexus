@@ -93,9 +93,9 @@ def create_app(
 
     key_manager = KeyManager()
     engine_lock = threading.Lock()
-    model_id = getattr(engine, "model_id", "nexus")
+    model_id = getattr(engine, "model_id", "vonk")
     if not isinstance(model_id, str):
-        model_id = "nexus"
+        model_id = "vonk"
 
     @contextmanager
     def generation_slot():
