@@ -19,7 +19,7 @@ try {
     stdio: "inherit",
     cwd: __dirname + "/../..",
   });
-  console.log("✓ Nexus package installed");
+  console.log("✓ Vonk package installed");
 } catch {
   console.log("ℹ Run 'pip install -e .' in the nexus repo to install the Python package");
 }
