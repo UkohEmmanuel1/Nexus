@@ -1,6 +1,6 @@
-# Nexus multi-provider bring-your-own-key (BYOK)
+# Vonk multi-provider bring-your-own-key (BYOK)
 
-Nexus can route chat to supported model APIs without hosting the external model
+Vonk can route chat to supported model APIs without hosting the external model
 or storing the user's provider API key. The existing `/chat` endpoint still
 uses the locally hosted Qwen GGUF model.
 
@@ -16,7 +16,7 @@ automatically grant access to every model.
 
 ## API
 
-The Nexus API itself requires the regular Nexus bearer key, while the selected
+The Vonk API itself requires the regular Vonk bearer key, while the selected
 upstream provider's key must be sent in the `X-Provider-Key` header.
 
 ```bash
@@ -41,12 +41,12 @@ For different providers, update both the provider and model fields.
 ## Security and operations
 
 - BYOK secrets are only read from request headers and forwarded to a fixed,
-  HTTPS provider endpoint. Nexus does not save or echo them.
+  HTTPS provider endpoint. Vonk does not save or echo them.
 - Never put provider keys in a browser app's source, localStorage, URL,
-  logs or a Git commit. Keep Nexus and provider credentials separately.
-- Use HTTPS and a trusted Nexus server. Its operator technically can access
+  logs or a Git commit. Keep Vonk and provider credentials separately.
+- Use HTTPS and a trusted Vonk server. Its operator technically can access
   in-transit credentials; for untrusted deployments, call providers directly.
-- Nexus enforces authentication and per-key rate limiting as before.
+- Vonk enforces authentication and per-key rate limiting as before.
 - Invalid upstream keys, quota errors and provider failures produce sanitized
   errors. The connector does not guarantee provider-level spending limits.
 - No arbitrary base URLs or model download commands are accepted.
@@ -56,5 +56,5 @@ For different providers, update both the provider and model fields.
   budgets, encrypted optional storage (only with opt-in), audit metadata
   without prompts or secrets, and abuse protection.
 
-The CLI currently supports native Nexus models; use curl or any HTTP client to
+The CLI currently supports native Vonk models; use curl or any HTTP client to
 access the BYOK service. A dedicated interactive BYOK CLI can be added later.
