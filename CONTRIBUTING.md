@@ -1,4 +1,4 @@
-# Contributing to Nexus
+# Contributing to Vonk
 
 We welcome contributions! Please see our [contributing guide](docs/contributing.md) for details.
 
