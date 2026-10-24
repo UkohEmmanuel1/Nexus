@@ -1,6 +1,6 @@
-# Nexus AI — terminal coding assistant
+# Vonk AI — terminal coding assistant
 
-Nexus now has two lightweight CLI implementations with the same main commands.
+Vonk now has two lightweight CLI implementations with the same main commands.
 Both offer multi-provider BYOK text chat, model selection, local provider-key
 configuration, and optional read-only code file context. Neither requires
 GPU hardware or downloads large local weights.
@@ -8,7 +8,7 @@ GPU hardware or downloads large local weights.
 ## Install with pip (Python 3.10+)
 
 ```bash
-pip install "git+https://github.com/UkohEmmanuel1/Nexus.git#subdirectory=packages/python-cli"
+pip install "git+https://github.com/UkohEmmanuel1/Vonk.git#subdirectory=packages/python-cli"
 vonk models
 vonk login deepseek
 vonk use deepseek deepseek-chat
@@ -23,8 +23,8 @@ installs directly from the GitHub source.
 ## Install with npm (Node.js 20+)
 
 ```bash
-git clone https://github.com/UkohEmmanuel1/Nexus.git
-cd Nexus/packages/npm-cli
+git clone https://github.com/UkohEmmanuel1/Vonk.git
+cd Vonk/packages/npm-cli
 npm install -g .
 vonk models
 vonk login deepseek
@@ -59,7 +59,7 @@ files, run shell commands, index an entire repository, use LSP, track Git
 changes, or propose/apply reviewed diffs. Those need a separate permission
 and sandbox architecture.
 
-Both clients call model providers directly with HTTPS. The Nexus hosted API
+Both clients call model providers directly with HTTPS. The Vonk hosted API
 also supports `/v1/chat/byok` as a separate deployment-based entrypoint.
 Models are examples, not guarantees; check your provider's actual catalog,
 pricing, region and account permissions.
