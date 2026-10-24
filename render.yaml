@@ -1,6 +1,6 @@
 services:
   - type: web
-    name: nexus
+    name: vonk
     runtime: docker
     branch: main
     autoDeployTrigger: checksPass
@@ -30,6 +30,6 @@ services:
       - key: NEXUS_RATE_LIMIT
         value: "60"
     disk:
-      name: nexus-data
+      name: vonk-data
       mountPath: /var/data
       sizeGB: 5
