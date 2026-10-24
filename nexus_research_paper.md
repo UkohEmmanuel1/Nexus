@@ -1,11 +1,11 @@
-# Nexus: A Lightweight Mixture-of-Experts Large Language Model for Offline Deployment in Resource-Constrained Environments
+# Vonk: A Lightweight Mixture-of-Experts Large Language Model for Offline Deployment in Resource-Constrained Environments
 
 ## Abstract
-The rapid advancement of Large Language Models (LLMs) has predominantly favored resource-heavy cloud architectures, alienating developing economies with limited internet connectivity and computational infrastructure. This paper presents *Nexus*, a lightweight, 3-billion-parameter Mixture-of-Experts (MoE) Large Language Model optimized for offline edge-device inference. Designed specifically to address localized natural language processing (NLP) challenges—such as offline Hausa, Yoruba, and Igbo translation and agricultural advisory systems in Nigeria—Nexus leverages an 8-expert architecture where only 2 experts are active per token. This significantly reduces floating-point operations (FLOPs) and memory bandwidth requirements while maintaining frontier-level reasoning capabilities. We detail our rigorous data preprocessing pipeline, scalable YaRN-based context extension (up to 1M tokens), and memory-efficient fine-tuning strategies (QLoRA, FSDP). Our evaluation demonstrates that Nexus provides a highly computationally efficient alternative to monolithic LLMs, establishing a robust framework for democratizing AI in low-resource environments.
+The rapid advancement of Large Language Models (LLMs) has predominantly favored resource-heavy cloud architectures, alienating developing economies with limited internet connectivity and computational infrastructure. This paper presents *Vonk*, a lightweight, 3-billion-parameter Mixture-of-Experts (MoE) Large Language Model optimized for offline edge-device inference. Designed specifically to address localized natural language processing (NLP) challenges—such as offline Hausa, Yoruba, and Igbo translation and agricultural advisory systems in Nigeria—Vonk leverages an 8-expert architecture where only 2 experts are active per token. This significantly reduces floating-point operations (FLOPs) and memory bandwidth requirements while maintaining frontier-level reasoning capabilities. We detail our rigorous data preprocessing pipeline, scalable YaRN-based context extension (up to 1M tokens), and memory-efficient fine-tuning strategies (QLoRA, FSDP). Our evaluation demonstrates that Vonk provides a highly computationally efficient alternative to monolithic LLMs, establishing a robust framework for democratizing AI in low-resource environments.
 
 ## 1. Introduction
 ### Motivation
-In developing economies such as Nigeria, the deployment of state-of-the-art AI systems is severely bottlenecked by intermittent internet access, high bandwidth costs, and an over-reliance on edge devices (e.g., low-end smartphones and basic consumer GPUs). While global LLMs excel at general-purpose tasks, they require continuous cloud connectivity and massive computational overhead. Solving localized, niche problems—such as real-time, offline translation for regional languages (e.g., Hausa, Yoruba) or localized crop yield advisory systems—demands a paradigm shift. We must move away from chasing pure State-of-the-Art (SOTA) accuracy via sheer parameter scale, and instead focus on *efficiency, simplicity, and reproducibility*. This research introduces Nexus, an open-source, scalable LLM framework that frames computational constraints not as a bug, but as a driving feature for edge-deployable AI.
+In developing economies such as Nigeria, the deployment of state-of-the-art AI systems is severely bottlenecked by intermittent internet access, high bandwidth costs, and an over-reliance on edge devices (e.g., low-end smartphones and basic consumer GPUs). While global LLMs excel at general-purpose tasks, they require continuous cloud connectivity and massive computational overhead. Solving localized, niche problems—such as real-time, offline translation for regional languages (e.g., Hausa, Yoruba) or localized crop yield advisory systems—demands a paradigm shift. We must move away from chasing pure State-of-the-Art (SOTA) accuracy via sheer parameter scale, and instead focus on *efficiency, simplicity, and reproducibility*. This research introduces Vonk, an open-source, scalable LLM framework that frames computational constraints not as a bug, but as a driving feature for edge-deployable AI.
 
 ## 2. Literature Review
 Recent advancements in LLMs have heavily relied on monolithic dense transformer architectures, which are notoriously expensive to train and deploy [1]. Models like LLaMA-3 [2] and Mistral [3] have introduced highly capable open-weight models; however, even their smallest configurations often exceed the memory limits of standard edge devices. 
@@ -16,7 +16,7 @@ To mitigate these costs, Mixture-of-Experts (MoE) architectures have gained trac
 
 ## 3. Methodology
 ### 3.1 Dataset and Preprocessing
-To train and fine-tune Nexus for localized tasks, data quality was prioritized over sheer volume. The dataset comprises multi-source text corpora loaded via a robust caching and streaming `DataPipeline`. 
+To train and fine-tune Vonk for localized tasks, data quality was prioritized over sheer volume. The dataset comprises multi-source text corpora loaded via a robust caching and streaming `DataPipeline`. 
 
 The preprocessing pipeline implements the following deterministic transformations:
 1. **Sanitization:** Standardizing carriage returns by replacing `\r\n` and `\r` with `\n` and stripping trailing whitespaces to ensure tokenization consistency.
@@ -24,13 +24,13 @@ The preprocessing pipeline implements the following deterministic transformation
 3. **Partitioning:** The dataset is split using a deterministic seed ($S = 42$) into 98% training, 1% validation, and 1% test sets to maximize the training signal while maintaining a rigorous hold-out validation scheme.
 
 ### 3.2 Model Architecture
-Nexus is built on a custom MoE Transformer architecture. The base configuration consists of $\sim$3 Billion parameters with the following hyperparameters:
+Vonk is built on a custom MoE Transformer architecture. The base configuration consists of $\sim$3 Billion parameters with the following hyperparameters:
 * **Layers ($L$):** 26
 * **Embedding Dimension ($d$):** 3200
 * **Attention Heads:** 32 Query heads, 8 Key/Value heads (Grouped-Query Attention).
 * **Vocabulary Size:** 128,000 tokens.
 
-The core efficiency of Nexus lies in its MoE configuration. Rather than a dense Feed-Forward Network (FFN), we utilize 8 distinct expert networks per layer. For a given token $x$, a router network calculates a probability distribution over the experts. We enforce a `top_k = 2` routing mechanism, meaning only the top 2 experts process the token. 
+The core efficiency of Vonk lies in its MoE configuration. Rather than a dense Feed-Forward Network (FFN), we utilize 8 distinct expert networks per layer. For a given token $x$, a router network calculates a probability distribution over the experts. We enforce a `top_k = 2` routing mechanism, meaning only the top 2 experts process the token. 
 
 Mathematically, the output of the MoE layer is defined as:
 $$ y = \sum_{i=1}^{k} g_i(x) E_i(x) $$
@@ -47,28 +47,28 @@ Given the severe constraint of utilizing CPU/Google Colab free-tier GPUs (e.g., 
 ## 4. Results
 *(Note to Emmanuel: Insert your actual empirical data, evaluation scripts output, and specific baselines here. Below is a narrative template for your results.)*
 
-We evaluated Nexus against standard dense baselines, including a canonical 1B dense transformer and an unoptimized LLaMA-3 8B. 
-* **Performance:** Nexus achieved a highly competitive F1-score of **[Insert F1, e.g., 0.89]** and an accuracy of **[Insert Accuracy, e.g., 92%]** on the localized validation set. 
-* **Efficiency:** Compared to the 8B baseline, Nexus reduced inference VRAM usage by **[Insert %]** and improved generation speed by **[Insert %]**, proving its viability for edge deployment.
+We evaluated Vonk against standard dense baselines, including a canonical 1B dense transformer and an unoptimized LLaMA-3 8B. 
+* **Performance:** Vonk achieved a highly competitive F1-score of **[Insert F1, e.g., 0.89]** and an accuracy of **[Insert Accuracy, e.g., 92%]** on the localized validation set. 
+* **Efficiency:** Compared to the 8B baseline, Vonk reduced inference VRAM usage by **[Insert %]** and improved generation speed by **[Insert %]**, proving its viability for edge deployment.
 
 > **Note to Emmanuel: Visualizations to Generate:**
 > 1. **Training Loss Curve:** Plot Epochs (X-axis) vs. Training/Validation Loss (Y-axis) to show stable convergence.
-> 2. **Inference Latency Bar Chart:** Compare the milliseconds/token of Nexus vs. a Dense 3B model vs. LLaMA-3 8B.
+> 2. **Inference Latency Bar Chart:** Compare the milliseconds/token of Vonk vs. a Dense 3B model vs. LLaMA-3 8B.
 > 3. **Confusion Matrix:** (If treating language translation/classification as discrete tasks) Generate a seaborn heatmap of predicted vs. true labels.
 
 ## 5. Discussion & Limitations
-While Nexus demonstrates high efficiency, it is not without limitations. 
+While Vonk demonstrates high efficiency, it is not without limitations. 
 1. **Small Dataset Size:** High-quality digitized text for local Nigerian languages is scarce. This limited dataset size increases the risk of overfitting. We mitigated this by utilizing aggressive Grouped-Query Attention dropout and Early Stopping during the fine-tuning phase.
 2. **MoE Expert Load:** Despite auxiliary loss penalties, certain semantic concepts occasionally overloaded specific experts, mildly bottlenecking the capacity factor (set at 1.25). 
 
 However, the trade-off is highly favorable. The model achieves sufficient perceptual quality for real-world tasks without the multi-million dollar compute budgets typically required for LLM development.
 
 ## 6. Conclusion & Future Work
-This paper presented Nexus, a lightweight MoE LLM engineered for edge deployment in resource-constrained environments like Nigeria. By prioritizing algorithmic efficiency over brute-force scaling, we provide a reproducible blueprint for local AI research.
+This paper presented Vonk, a lightweight MoE LLM engineered for edge deployment in resource-constrained environments like Nigeria. By prioritizing algorithmic efficiency over brute-force scaling, we provide a reproducible blueprint for local AI research.
 
 **Future Work:**
 1. **Algorithmic Improvement:** We plan to explore dynamic `top_k` routing, where the model can adaptively choose 1, 2, or 3 experts based on token complexity, further optimizing accuracy-to-compute ratios.
-2. **Real-World Deployment:** The immediate next step is wrapping the Nexus `.pt` checkpoint and inference engine into a mobile-first web application or a TensorFlow Lite/ONNX binary, allowing offline, on-device usage for local farmers and translators.
+2. **Real-World Deployment:** The immediate next step is wrapping the Vonk `.pt` checkpoint and inference engine into a mobile-first web application or a TensorFlow Lite/ONNX binary, allowing offline, on-device usage for local farmers and translators.
 
 ## 7. Ethical Considerations
 Deploying AI in local environments raises significant ethical concerns regarding bias and data privacy. The training corpus was heavily filtered to remove PII (Personally Identifiable Information). Furthermore, because the model runs entirely offline on the user's edge device, user query data is never transmitted to a centralized server, inherently preserving data privacy—a critical advantage over cloud-API models.
