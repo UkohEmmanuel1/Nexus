@@ -1,28 +1,28 @@
-# Nexus
+# Vonk
 
 ## Install Vonk coding CLI (from source)
 
-Vonk is the name of the interactive coding assistant; the Nexus repository includes lightweight CLI clients for **pip** and **npm** users.
+Vonk is the name of the interactive coding assistant; the Vonk repository includes lightweight CLI clients for **pip** and **npm** users.
 They support choosing among AI providers, using your own API key, chatting, and
 attaching individual text files for read-only code review.
 
 Python:
 
 ```bash
-pip install "git+https://github.com/UkohEmmanuel1/Nexus.git#subdirectory=packages/python-cli"
-nexus-ai models
-nexus-ai login deepseek
-nexus-ai use deepseek deepseek-chat
-nexus-ai chat
+pip install "git+https://github.com/UkohEmmanuel1/Vonk.git#subdirectory=packages/python-cli"
+vonk models
+vonk login deepseek
+vonk use deepseek deepseek-chat
+vonk chat
 ```
 
 Node.js:
 
 ```bash
-git clone https://github.com/UkohEmmanuel1/Nexus.git
-cd Nexus/packages/npm-cli
+git clone https://github.com/UkohEmmanuel1/Vonk.git
+cd Vonk/packages/npm-cli
 npm install -g .
-nexus-ai chat
+vonk chat
 ```
 
 See [CLI documentation](docs/terminal.md). **These packages are not yet published
@@ -31,7 +31,7 @@ to npm or PyPI.** This is a chat MVP, not yet an autonomous file-editing agent.
 ## API deployment
 
 For the secured CPU GGUF API, use the root `render.yaml` and
-[Render deployment guide](docs/render.md). Nexus is API-only; the browser
+[Render deployment guide](docs/render.md). Vonk is API-only; the browser
 frontend has been removed. Authentication, hashed API credentials, and disabled
 crawling remain the defaults. Deployment needs a paid server and persistent disk.
 Start with the [public API guide](docs/api.md) for client integration and personal
@@ -43,7 +43,7 @@ before promising a user count or uptime target.
 The capabilities below describe the broader research framework; they are not
 all available through the hosted API and are not a production certification.
 
-Nexus provides authenticated text chat and streaming with a quantized Qwen model. The repository also contains experimental training, model, and agent components.
+Vonk provides authenticated text chat and streaming with a quantized Qwen model. The repository also contains experimental training, model, and agent components.
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 [![Python 3.10+](https://img.shields.io/badge/python-3.10+-blue.svg)](pyproject.toml)
@@ -75,8 +75,8 @@ Ensure you have **Python 3.10+** and **Git** installed on your machine or laptop
 
 ```bash
 # Clone repository
-git clone https://github.com/UkohEmmanuel1/Nexus.git
-cd Nexus
+git clone https://github.com/UkohEmmanuel1/Vonk.git
+cd Vonk
 
 # Create and activate virtual environment
 python -m venv .venv
@@ -95,7 +95,7 @@ pip install -e ".[all]"
 
 ### 2. Running on Your Laptop / Local Machine
 
-Nexus can run on both CPU and CUDA-enabled GPUs. When running on a standard laptop without an NVIDIA GPU, add `--device cpu`.
+Vonk can run on both CPU and CUDA-enabled GPUs. When running on a standard laptop without an NVIDIA GPU, add `--device cpu`.
 
 #### Option A: Interactive CLI Chat
 ```bash
