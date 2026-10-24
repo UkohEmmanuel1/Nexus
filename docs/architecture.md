@@ -2,7 +2,7 @@
 
 ## Overview
 
-Nexus is a decoder-only Transformer language model designed for scalable pretraining, fine-tuning, and inference across model sizes from 1B to 70B+ parameters. The system is organized into six layers:
+Vonk is a decoder-only Transformer language model designed for scalable pretraining, fine-tuning, and inference across model sizes from 1B to 70B+ parameters. The system is organized into six layers:
 
 ```
 ┌──────────────────────────────────────────────────────┐
