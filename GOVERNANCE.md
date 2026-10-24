@@ -2,7 +2,7 @@
 
 ## Project Structure
 
-Nexus is an open-source community project. Decisions are made through consensus among maintainers.
+Vonk is an open-source community project. Decisions are made through consensus among maintainers.
 
 ## Maintainers
 
