@@ -135,7 +135,7 @@ async def main():
     )
 
     # Crawl top search results for a query
-    results = await crawler.crawl_search_results("Nexus LLM", num_results=5)
+    results = await crawler.crawl_search_results("Vonk LLM", num_results=5)
 
     # Continuous re-crawl on an interval
     async for batch in crawler.continuous_crawl(
@@ -230,7 +230,7 @@ POST /v1/agent/run
 Web crawl endpoints are served by the API server (see [Deployment](deployment.md) for the full list):
 
 ```json
-POST /crawl      { "search_query": "Nexus LLM", "max_depth": 1 }
+POST /crawl      { "search_query": "Vonk LLM", "max_depth": 1 }
 POST /crawl/schedule  { "seed_urls": ["https://example.com"], "interval_seconds": 3600 }
 GET  /crawl/data ?query=llm&limit=10
 GET  /crawl/status
