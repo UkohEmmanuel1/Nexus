@@ -58,7 +58,7 @@ The API server exposes a full web crawling pipeline backed by `WebCrawler`, `Cra
 curl -X POST http://localhost:8000/crawl \
   -H "Authorization: Bearer sk-your-key" \
   -H "Content-Type: application/json" \
-  -d '{"search_query": "Nexus LLM", "max_depth": 1}'
+  -d '{"search_query": "Vonk LLM", "max_depth": 1}'
 
 # Schedule recurring crawls
 curl -X POST http://localhost:8000/crawl/schedule \
