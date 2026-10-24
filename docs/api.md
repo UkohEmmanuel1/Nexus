@@ -1,4 +1,4 @@
-# Using the Nexus API
+# Using the Vonk API
 
 The hosted service is a text generation API. Ask the operator for the service URL
 and your own API key. Use HTTPS for all remote calls. There is no browser chat UI.
