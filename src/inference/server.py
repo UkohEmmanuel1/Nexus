@@ -72,7 +72,7 @@ def create_app(
             await crawler.close()
 
     app = FastAPI(
-        title="Nexus API",
+        title="Vonk API",
         version="0.1.0",
         docs_url=None,
         redoc_url=None,
@@ -259,7 +259,7 @@ def create_app(
     @app.get("/", include_in_schema=False)
     async def service_info():
         return {
-            "service": "Nexus API",
+            "service": "Vonk API",
             "version": app.version,
             "health": "/health",
             "readiness": "/ready",
