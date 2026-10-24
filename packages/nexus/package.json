@@ -1,9 +1,9 @@
 {
-  "name": "nexus-llm",
+  "name": "vonk-legacy-cli",
   "version": "0.1.0",
-  "description": "Nexus LLM - CLI and API server for your own language model",
+  "description": "Legacy Vonk CLI wrapper",
   "bin": {
-    "nexus": "./bin/nexus"
+    "vonk-legacy": "./bin/nexus"
   },
   "scripts": {
     "postinstall": "node install.js"
