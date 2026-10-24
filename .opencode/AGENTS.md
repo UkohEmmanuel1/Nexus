@@ -1,4 +1,4 @@
-# Nexus opencode Agent
+# Vonk opencode Agent
 
 ## Commands
 - `make dev` — install dev dependencies
