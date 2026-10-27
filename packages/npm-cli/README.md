@@ -3,6 +3,12 @@
 Interactive developer terminal: model selection, provider connection, free local
 models, paid models with your own key, skills, and stdio MCP tools.
 
+The interactive UI fills the terminal with a green-and-amber theme, Vonk
+wordmark, conversation history, and persistent composer. Type a prompt directly.
+`/` or Ctrl+P opens commands; F2 selects models, F3 connects providers, Esc
+cancels a request, and Ctrl+D exits. The terminal tab shows `Vonk · PROJECT`.
+Plain chat remains available with `vonk chat --plain`.
+
 After publication: `npm install -g vonk`, then run `vonk` or `vonk chat`.
 For the current source candidate, clone the repository and run
 `npm install -g ./packages/npm-cli`. Node.js 20.3+ is required.

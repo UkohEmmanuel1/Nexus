@@ -1,6 +1,6 @@
 {
   "name": "vonk",
-  "version": "0.3.0",
+  "version": "0.4.0",
   "description": "Vonk multi-provider AI coding terminal",
   "type": "module",
   "bin": {

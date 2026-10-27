@@ -144,6 +144,10 @@ def mcp_menu(directory):
 
 
 def dashboard(api, connect=False):
+    if sys.stdin.isatty() and sys.stdout.isatty():
+        from .tui import run
+
+        return run(api, connect)
     config, keys = api.config_paths()
     if connect:
         connect_provider(api, config, keys)

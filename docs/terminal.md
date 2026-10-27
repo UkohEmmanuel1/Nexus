@@ -1,12 +1,33 @@
 # Vonk terminal assistant
 
-## Interactive workspace (0.3.0)
+## Interactive workspace (0.4.0)
 
-Run `vonk`, `vonk chat`, or `vonk ui` to open the developer workspace. It opens
-without an API key and provides Start chat, Select model, Connect provider,
-Free models, Skills, and MCP connections. Select a number or use `/models`,
-`/connect`, `/skills`, `/mcp`, `/help`, and `/exit`. A missing key leads to setup,
-rather than closing the workspace. `vonk connect` opens provider setup directly.
+Run `vonk`, `vonk chat`, or `vonk ui` in an interactive terminal to open the
+full-screen workspace. Vonk uses a dark green background, lime green accents,
+and amber highlights, with a wordmark, conversation area, model status, and a
+persistent message composer. The terminal tab title shows `Vonk · PROJECT`.
+It opens without an API key. Type a message directly, or `/` for the command
+palette. Use arrow keys and Enter to choose models and providers. Credentials
+are entered in a hidden field. `vonk connect` opens provider setup directly.
+
+| Key or command | Action |
+|---|---|
+| Enter / Alt+Enter | Send / insert a new line |
+| Ctrl+P or `/` | Command palette |
+| F2 or `/models` | Select model |
+| F3 or `/connect` | Connect provider |
+| `/free` | Choose local or hosted free-tier options |
+| `/skills` | List skills and toggle them with Enter |
+| `/mcp` | View connections and MCP command instructions |
+| `/new` | Clear conversation |
+| PageUp / PageDown | Scroll conversation |
+| Esc | Close palette or cancel request |
+| Ctrl+D or `/exit` | Exit |
+
+Add skills and MCP servers with the CLI commands below from another terminal.
+The UI does not automatically start MCP programs. Windows CMD, PowerShell, and
+modern ANSI terminals are supported. Piped input retains the basic menu without
+full-screen control sequences; `vonk chat --plain` explicitly selects plain chat.
 
 Free local chat uses Ollama at `127.0.0.1:11434`, without a provider key or API
 bill. Install Ollama and run `ollama pull qwen2.5-coder:1.5b`, then choose the
@@ -38,8 +59,9 @@ than Windows `.cmd`/`.bat` wrappers. Pass `--` before server arguments that
 contain option flags when adding a server with the Python client.
 
 Plain/script chat is available with `vonk chat --plain`, or a one-shot prompt
-such as `vonk chat "Explain this code"`. `/menu` returns from workspace chat to
-the main menu. Both packages use the same user configuration directory.
+such as `vonk chat "Explain this code"`. Both packages use the same user
+configuration directory. Python uses prompt-toolkit; npm uses Node's terminal
+APIs without runtime dependencies. Publishing remains paused for local testing.
 
 Public registry installation is pending authorization/publication. The agreed
 Python package is `vonk-ai-terminal`, keeping the `vonk` executable. See
@@ -71,7 +93,7 @@ vonk --version
 ```
 
 Choose one installation for the `vonk` command. Both expose the same executable
-name and share configuration. Version 0.3.0 is prepared in source; publishing to
+name and share configuration. Version 0.4.0 is prepared in source; publishing to
 npm or PyPI is a separate step and has not been performed here.
 
 ## Qwen, DeepSeek, and MiMo on Hugging Face

@@ -12,7 +12,7 @@ import tempfile
 
 from .providers import EXAMPLE_MODELS, HUGGINGFACE_MODELS, PROVIDERS, complete_byok, resolve_model
 
-VERSION = "0.3.0"
+VERSION = "0.4.0"
 DEFAULT = {"provider": "deepseek", "model": "deepseek-chat"}
 SYSTEM = (
     "You are Vonk, a practical coding assistant. Explain changes precisely; "

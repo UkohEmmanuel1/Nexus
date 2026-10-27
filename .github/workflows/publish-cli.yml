@@ -36,7 +36,7 @@ jobs:
       - name: Install CLI and build tools
         run: python -m pip install ./packages/python-cli pytest build twine
       - name: Python CLI and MCP tests
-        run: python -m pytest tests/test_assistant_cli.py tests/test_workspace.py tests/test_providers.py -q
+        run: python -m pytest tests/test_assistant_cli.py tests/test_workspace.py tests/test_providers.py tests/test_tui.py -q
       - name: npm CLI and MCP tests
         run: npm --prefix packages/npm-cli test
       - name: Installed Python entry point

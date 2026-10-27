@@ -18,7 +18,7 @@ import { Writable } from "node:stream";
 import { skillContext } from "../lib/workspace.js";
 import { dashboard, extensionCommand } from "../lib/ui.js";
 
-export const VERSION = "0.3.0";
+export const VERSION = "0.4.0";
 export const endpoints = {
     ollama: "http://127.0.0.1:11434/v1/chat/completions",
     openai: "https://api.openai.com/v1/chat/completions",
@@ -365,6 +365,9 @@ export async function main(argv = process.argv.slice(2), dependencies = {}) {
             config,
             keysPath,
             VERSION,
+            systemPrompt,
+            complete: dependencies.complete || ((provider, model, messages, key, max, temp, signal) =>
+                complete(provider, model, messages, key, max, temp, fetch, signal)),
         };
         if (["skills", "mcp"].includes(command))
             return await extensionCommand(command, args, directory, api);

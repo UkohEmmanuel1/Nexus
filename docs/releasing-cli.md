@@ -1,6 +1,6 @@
 # Releasing Vonk CLI
 
-The source packages are version 0.3.0. Public installation works only after
+The source packages are version 0.4.0. Public installation works only after
 the respective registry accepts the upload. A Git push is not a registry release.
 
 Target commands after successful publication:

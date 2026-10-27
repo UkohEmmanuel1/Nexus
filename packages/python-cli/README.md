@@ -2,7 +2,10 @@
 
 An interactive developer terminal with model selection, provider connections,
 skills, and on-demand stdio MCP tools. Run `vonk` or `vonk chat` to open the
-workspace. No API key is needed to browse the interface.
+full-screen green-and-amber workspace. Type directly into the composer; `/` or
+Ctrl+P opens commands, F2 selects models, F3 connects providers, Esc cancels a
+request, and Ctrl+D exits. The terminal tab shows `Vonk · PROJECT`. No API key
+is needed to browse the interface. Plain chat: `vonk chat --plain`.
 
 Python installation: `pip install vonk-ai-terminal` after registry publication.
 For the current source release, clone the repository and run

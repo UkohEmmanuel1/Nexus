@@ -170,6 +170,10 @@ export async function extensionCommand(kind, args, directory, api) {
     }
 }
 export async function dashboard(api, directory, connect = false) {
+    if (process.stdin.isTTY && process.stdout.isTTY) {
+        const { terminalWorkspace } = await import("./tui.js");
+        return await terminalWorkspace(api, directory, connect);
+    }
     const input = reader(),
         config = api.config,
         keys = api.keysPath;
