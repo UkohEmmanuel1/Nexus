@@ -1,1 +1,1 @@
-"""Nexus AI terminal package."""
+"""Vonk terminal assistant package."""

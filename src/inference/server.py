@@ -20,8 +20,8 @@ from starlette.background import BackgroundTask
 
 from src.agents.crawl_scheduler import CrawlScheduler
 from src.agents.web_crawler import CrawlTask, WebCrawler
+from src.inference.providers import EXAMPLE_MODELS, PROVIDERS, ProviderError, complete_byok
 from src.inference.security import WindowLimiter
-from src.inference.providers import PROVIDERS, EXAMPLE_MODELS, complete_byok
 
 if TYPE_CHECKING:
     from src.inference.engine import InferenceEngine
@@ -130,6 +130,10 @@ def create_app(
 
     credential_limiter = WindowLimiter(rate_limit)
     authentication_limiter = WindowLimiter(300)
+
+    @app.exception_handler(ProviderError)
+    async def provider_error(request: Request, exc: ProviderError):
+        return JSONResponse(status_code=exc.status_code, content={"detail": exc.detail})
 
     @app.exception_handler(RequestValidationError)
     async def validation_error(request: Request, exc: RequestValidationError):
@@ -311,10 +315,12 @@ def create_app(
 
     @app.get("/v1/providers")
     async def list_providers():
-        return {"providers": [
-            {"id": key, "example_models": EXAMPLE_MODELS.get(key, [])}
-            for key in PROVIDERS
-        ], "note": "Examples only; model availability depends on provider account."}
+        return {
+            "providers": [
+                {"id": key, "example_models": EXAMPLE_MODELS.get(key, [])} for key in PROVIDERS
+            ],
+            "note": "Examples only; model availability depends on provider account.",
+        }
 
     @app.post("/v1/chat/byok")
     async def provider_chat(req: ProviderChatRequest, request: Request):

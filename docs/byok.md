@@ -7,7 +7,7 @@ uses the locally hosted Qwen GGUF model.
 ## Supported providers
 
 OpenAI, Anthropic, Google Gemini, DeepSeek, Groq, Together AI, Fireworks AI,
-OpenRouter, Mistral, Hugging Face Inference Providers, and xAI.
+OpenRouter, Mistral, Hugging Face Inference Providers, OpenCode, and xAI.
 
 Providers may offer open-weight models (such as Llama, Qwen, DeepSeek and
 Mistral families) or proprietary hosted models. Model availability, names,
@@ -56,5 +56,7 @@ For different providers, update both the provider and model fields.
   budgets, encrypted optional storage (only with opt-in), audit metadata
   without prompts or secrets, and abuse protection.
 
-The CLI currently supports native Vonk models; use curl or any HTTP client to
-access the BYOK service. A dedicated interactive BYOK CLI can be added later.
+The [Vonk CLI](terminal.md) calls providers directly without a Vonk server key.
+It includes Hugging Face aliases `qwen`, `deepseek`, and `mimo`. Big Pickle uses
+the separate `opencode` provider and is subject to OpenCode's client/account
+restrictions. The Python CLI needs only HTTPX, without torch or FastAPI.

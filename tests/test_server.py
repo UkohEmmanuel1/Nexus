@@ -297,6 +297,28 @@ def test_stream_completion_releases_model(mock_engine):
     )
 
 
+def test_byok_provider_errors_preserve_status_and_security_headers(mock_engine, monkeypatch):
+    from src.inference.providers import ProviderError
+
+    async def rejected(**kwargs):
+        raise ProviderError(429, "Provider rate limit or quota exceeded")
+
+    monkeypatch.setattr("src.inference.server.complete_byok", rejected)
+    client = TestClient(create_app(mock_engine, api_key="master"))
+    result = client.post(
+        "/v1/chat/byok",
+        headers={"X-API-Key": "master", "X-Provider-Key": "synthetic"},
+        json={
+            "provider": "huggingface",
+            "model": "qwen",
+            "messages": [{"role": "user", "content": "hello"}],
+        },
+    )
+    assert result.status_code == 429
+    assert result.json()["detail"] == "Provider rate limit or quota exceeded"
+    assert result.headers["Cache-Control"] == "no-store"
+
+
 def test_invalid_credentials_are_throttled(mock_engine):
     client = TestClient(create_app(mock_engine, api_key="master"))
     for _ in range(300):

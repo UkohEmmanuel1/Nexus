@@ -34,10 +34,36 @@ jobs:
         run: pip install fastapi==0.141.1 uvicorn==0.46.0 pydantic==2.13.3 httpx==0.28.1
 
       - name: Lint production serving code
-        run: ruff check src/inference/server.py src/inference/security.py src/inference/gguf.py src/utils/key_manager.py tests/test_production_api.py
+        run: ruff check src/inference/server.py src/inference/security.py src/inference/gguf.py src/inference/assistant_cli.py src/inference/providers.py src/utils/key_manager.py packages/python-cli/nexus_terminal tests/test_production_api.py tests/test_assistant_cli.py tests/test_providers.py
 
       - name: Run tests
         run: make test
+
+  cli:
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os: [ubuntu-latest, windows-latest]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Install standalone Python CLI without training dependencies
+        run: python -m pip install ./packages/python-cli pytest
+      - name: Test Python CLI
+        run: python -m pytest tests/test_assistant_cli.py tests/test_providers.py -q
+      - name: Test npm CLI
+        run: npm --prefix packages/npm-cli test
+      - name: Check installed Python entry point
+        run: vonk models huggingface
+      - name: Verify CLI does not import training runtime
+        run: python -c "import sys; import nexus_terminal.cli; assert 'torch' not in sys.modules"
+      - name: Validate npm package contents
+        run: npm pack --dry-run ./packages/npm-cli
 
   container:
     runs-on: ubuntu-latest

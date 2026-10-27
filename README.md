@@ -9,7 +9,7 @@ attaching individual text files for read-only code review.
 Python:
 
 ```bash
-pip install "git+https://github.com/UkohEmmanuel1/Vonk.git#subdirectory=packages/python-cli"
+pip install "git+https://github.com/UkohEmmanuel1/Nexus.git#subdirectory=packages/python-cli"
 vonk models
 vonk login deepseek
 vonk use deepseek deepseek-chat
@@ -19,14 +19,20 @@ vonk chat
 Node.js:
 
 ```bash
-git clone https://github.com/UkohEmmanuel1/Vonk.git
-cd Vonk/packages/npm-cli
+git clone https://github.com/UkohEmmanuel1/Nexus.git
+cd Nexus/packages/npm-cli
 npm install -g .
 vonk chat
 ```
 
 See [CLI documentation](docs/terminal.md). **These packages are not yet published
 to npm or PyPI.** This is a chat MVP, not yet an autonomous file-editing agent.
+
+The CLI includes Hugging Face presets for **Qwen, DeepSeek, and MiMo**:
+`vonk login huggingface`, `vonk use huggingface qwen`, then `vonk chat`.
+Use `vonk models huggingface` to see the model IDs. **Big Pickle** is routed
+separately with `vonk use opencode big-pickle` and an OpenCode credential;
+OpenCode account/client restrictions apply. `vonk status` shows your selection.
 
 ## API deployment
 
