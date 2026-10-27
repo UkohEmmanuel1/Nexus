@@ -48,7 +48,7 @@ def test_provider_timeouts_are_sanitized(monkeypatch):
 
 def test_provider_urls_are_fixed_https():
     for url, protocol in PROVIDERS.values():
-        assert url.startswith("https://")
+        assert url.startswith("https://") or url == "http://127.0.0.1:11434/v1/chat/completions"
         assert protocol in {"openai", "anthropic"}
 
 

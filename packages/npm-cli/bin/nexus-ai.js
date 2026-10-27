@@ -15,9 +15,12 @@ import { randomUUID } from "node:crypto";
 import { parseArgs } from "node:util";
 import { createInterface } from "node:readline";
 import { Writable } from "node:stream";
+import { skillContext } from "../lib/workspace.js";
+import { dashboard, extensionCommand } from "../lib/ui.js";
 
-export const VERSION = "0.2.0";
+export const VERSION = "0.3.0";
 export const endpoints = {
+    ollama: "http://127.0.0.1:11434/v1/chat/completions",
     openai: "https://api.openai.com/v1/chat/completions",
     deepseek: "https://api.deepseek.com/chat/completions",
     groq: "https://api.groq.com/openai/v1/chat/completions",
@@ -37,12 +40,13 @@ export const hfModels = {
     mimo: "XiaomiMiMo/MiMo-V2.5",
 };
 export const examples = {
+    ollama: "qwen2.5-coder:1.5b",
     openai: "gpt-4.1-mini",
     deepseek: "deepseek-chat",
     groq: "llama-3.3-70b-versatile",
     together: "meta-llama/Llama-3.3-70B-Instruct-Turbo",
     fireworks: "accounts/fireworks/models/llama-v3p3-70b-instruct",
-    openrouter: "deepseek/deepseek-chat",
+    openrouter: "openrouter/free",
     mistral: "mistral-small-latest",
     huggingface: hfModels.qwen,
     google: "gemini-2.5-flash",
@@ -114,6 +118,7 @@ export async function save(path, data, secret = false) {
     }
 }
 export async function credential(provider, path) {
+    if (provider === "ollama") return ["ollama-local", "local / no API key"];
     const names = [provider.toUpperCase() + "_API_KEY"];
     if (provider === "huggingface") names.push("HF_TOKEN");
     for (const name of names)
@@ -227,6 +232,7 @@ export async function complete(
     cancelSignal,
 ) {
     model = resolveModel(provider, model);
+    if (provider === "ollama") key = "ollama-local";
     if (typeof key !== "string" || !/^[\x21-\x7e]{1,512}$/.test(key))
         throw new CLIError("Invalid provider API key");
     if (
@@ -327,6 +333,7 @@ export async function complete(
 }
 const help = `Vonk ${VERSION} - read-only AI coding assistant
 Usage: vonk [chat [options] [PROMPT...] | models [PROVIDER] | use PROVIDER [MODEL] | login PROVIDER | logout [PROVIDER] | status]
+Workspace: vonk ui | vonk connect | vonk skills list | vonk mcp list
 Chat options: --provider NAME --model ID --file PATH (repeatable) --max-tokens 1-4096 --temperature NUMBER
 Hugging Face: vonk models huggingface; vonk use huggingface qwen
 Keys: PROVIDER_API_KEY, or HF_TOKEN for Hugging Face. --help and --version are available.`;
@@ -346,6 +353,23 @@ export async function main(argv = process.argv.slice(2), dependencies = {}) {
             process.env.VONK_CONFIG_DIR || join(homedir(), ".config", "vonk");
         const config = join(directory, "config.json"),
             keysPath = join(directory, "keys.json");
+        const api = {
+            main,
+            load,
+            save,
+            credential,
+            endpoints,
+            examples,
+            hfModels,
+            terminalText,
+            config,
+            keysPath,
+            VERSION,
+        };
+        if (["skills", "mcp"].includes(command))
+            return await extensionCommand(command, args, directory, api);
+        if (!argv.length || ["ui", "connect"].includes(command))
+            return await dashboard(api, directory, command === "connect");
         if (command === "models") {
             if (args.length > 1)
                 throw new CLIError("Usage: vonk models [PROVIDER]");
@@ -426,6 +450,7 @@ export async function main(argv = process.argv.slice(2), dependencies = {}) {
                     model: { type: "string" },
                     "max-tokens": { type: "string" },
                     temperature: { type: "string" },
+                    plain: { type: "boolean" },
                 },
             });
         } catch (error) {
@@ -448,6 +473,15 @@ export async function main(argv = process.argv.slice(2), dependencies = {}) {
             );
             return 0;
         }
+        if (
+            !parsed.positionals.length &&
+            !options.plain &&
+            !options.file &&
+            !options.model &&
+            !options.provider
+        ) {
+            return await dashboard(api, directory);
+        }
         const maxTokens = Number(options["max-tokens"] ?? 1024),
             temperature = Number(options.temperature ?? 0.7);
         if (
@@ -461,7 +495,12 @@ export async function main(argv = process.argv.slice(2), dependencies = {}) {
             throw new CLIError(
                 "Use --max-tokens 1-4096 and --temperature greater than 0 and at most 2",
             );
-        const context = await fileContext(options.file ?? []);
+        const context = [
+            await fileContext(options.file ?? []),
+            await skillContext(directory),
+        ]
+            .filter(Boolean)
+            .join("\n");
         if (!key)
             throw new CLIError(
                 `No key for ${provider}. Run 'vonk login ${provider}' or set its API key variable`,
@@ -539,9 +578,26 @@ export async function main(argv = process.argv.slice(2), dependencies = {}) {
                     console.log("Conversation cleared.");
                 } else if (prompt === "/help")
                     console.log(
-                        "/exit quit; /clear reset history; attached files are sent to your provider",
+                        "/exit quit; /clear reset; /menu workspace; attached files go to your provider",
                     );
-                else if (prompt) await ask(prompt);
+                else if (
+                    [
+                        "/menu",
+                        "/models",
+                        "/connect",
+                        "/skills",
+                        "/mcp",
+                    ].includes(prompt)
+                ) {
+                    rl.close();
+                    return options.plain
+                        ? 0
+                        : await dashboard(
+                              api,
+                              directory,
+                              prompt === "/connect",
+                          );
+                } else if (prompt) await ask(prompt);
                 if (interrupted) break;
                 process.stdout.write("vonk> ");
             }

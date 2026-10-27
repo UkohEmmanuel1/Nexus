@@ -1,5 +1,12 @@
 # Vonk
 
+Run `vonk` or `vonk chat` for the interactive developer workspace: model
+selection, provider connections, local/free-tier model options, skills, and
+on-demand stdio MCP tools. The workspace opens without an API key. Hosted paid
+models use your own provider key; local Ollama models require installed weights.
+Core chat is read-only; MCP tool calls are explicit user-authorized actions.
+See the [terminal guide](docs/terminal.md) and [registry release guide](docs/releasing-cli.md).
+
 ## Install Vonk coding CLI (from source)
 
 Vonk is the name of the interactive coding assistant; the Vonk repository includes lightweight CLI clients for **pip** and **npm** users.

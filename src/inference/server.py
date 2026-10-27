@@ -317,13 +317,17 @@ def create_app(
     async def list_providers():
         return {
             "providers": [
-                {"id": key, "example_models": EXAMPLE_MODELS.get(key, [])} for key in PROVIDERS
+                {"id": key, "example_models": EXAMPLE_MODELS.get(key, [])}
+                for key in PROVIDERS
+                if key != "ollama"
             ],
             "note": "Examples only; model availability depends on provider account.",
         }
 
     @app.post("/v1/chat/byok")
     async def provider_chat(req: ProviderChatRequest, request: Request):
+        if req.provider == "ollama":
+            raise HTTPException(400, "Ollama is a local CLI-only provider")
         # User-supplied API key is forwarded for this request only.
         # Do not persist it or include it in request bodies or logs.
         provider_key = request.headers.get("X-Provider-Key", "")

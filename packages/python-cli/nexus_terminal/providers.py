@@ -28,6 +28,7 @@ HUGGINGFACE_MODELS = {
 # Fixed provider endpoints. Model identifiers may change; users supply one supported
 # by their own provider account. Nothing here asserts model access or pricing.
 PROVIDERS = {
+    "ollama": ("http://127.0.0.1:11434/v1/chat/completions", "openai"),
     "openai": ("https://api.openai.com/v1/chat/completions", "openai"),
     "deepseek": ("https://api.deepseek.com/chat/completions", "openai"),
     "groq": ("https://api.groq.com/openai/v1/chat/completions", "openai"),
@@ -48,12 +49,13 @@ PROVIDERS = {
 # Examples only. Use /v1/providers to discover providers, and consult the
 # provider's live catalog for currently supported model names.
 EXAMPLE_MODELS = {
+    "ollama": ["qwen2.5-coder:1.5b", "deepseek-r1:1.5b"],
     "openai": ["gpt-4.1-mini"],
     "deepseek": ["deepseek-chat", "deepseek-reasoner"],
     "groq": ["llama-3.3-70b-versatile"],
     "together": ["meta-llama/Llama-3.3-70B-Instruct-Turbo"],
     "fireworks": ["accounts/fireworks/models/llama-v3p3-70b-instruct"],
-    "openrouter": ["deepseek/deepseek-chat"],
+    "openrouter": ["openrouter/free", "deepseek/deepseek-chat"],
     "mistral": ["mistral-small-latest"],
     "huggingface": list(HUGGINGFACE_MODELS.values()),
     "opencode": ["big-pickle"],
@@ -88,6 +90,8 @@ async def complete_byok(
 ) -> dict:
     if not isinstance(provider, str) or provider not in PROVIDERS:
         raise ProviderError(400, "Unsupported provider")
+    if provider == "ollama":
+        provider_key = "ollama-local"
     if (
         not isinstance(provider_key, str)
         or not 1 <= len(provider_key) <= 512

@@ -1,5 +1,50 @@
 # Vonk terminal assistant
 
+## Interactive workspace (0.3.0)
+
+Run `vonk`, `vonk chat`, or `vonk ui` to open the developer workspace. It opens
+without an API key and provides Start chat, Select model, Connect provider,
+Free models, Skills, and MCP connections. Select a number or use `/models`,
+`/connect`, `/skills`, `/mcp`, `/help`, and `/exit`. A missing key leads to setup,
+rather than closing the workspace. `vonk connect` opens provider setup directly.
+
+Free local chat uses Ollama at `127.0.0.1:11434`, without a provider key or API
+bill. Install Ollama and run `ollama pull qwen2.5-coder:1.5b`, then choose the
+local model in Vonk. Hardware and model downloads are required. The OpenRouter
+free router is another option, with the user's own free-tier key and quotas.
+Vonk does not promise anonymous free hosted inference.
+
+```bash
+vonk skills add ./SKILL.md --name review
+vonk skills list
+vonk skills disable review
+vonk mcp add local -- python ./server.py
+vonk mcp tools local --yes
+vonk mcp call local tool_name '{"argument":"value"}' --yes
+```
+
+Skills are local UTF-8 instruction files (32 KB each), imported into your user
+configuration and included in chat only when enabled. Enabled skills are capped
+at 32 KB in total. They do not execute code.
+
+MCP currently supports legacy 2024/2025 stdio servers, tool listing, and explicit
+tool calls. Remote HTTP, OAuth, and autonomous model-selected tool calls are not
+implemented in this release. Adding/listing a server does not start it. Starting
+its configured executable requires a confirmation, or `--yes` for a reviewed
+invocation. Provider-key environment variables are not forwarded to it. MCP
+programs still run with your OS user's filesystem/network permissions; they are
+not sandboxed. Use real executables (for example `node.exe server.js`) rather
+than Windows `.cmd`/`.bat` wrappers. Pass `--` before server arguments that
+contain option flags when adding a server with the Python client.
+
+Plain/script chat is available with `vonk chat --plain`, or a one-shot prompt
+such as `vonk chat "Explain this code"`. `/menu` returns from workspace chat to
+the main menu. Both packages use the same user configuration directory.
+
+Public registry installation is pending authorization/publication. The agreed
+Python package is `vonk-ai-terminal`, keeping the `vonk` executable. See
+[release instructions](releasing-cli.md) for the exact publishing status/checks.
+
 Vonk offers Python and npm clients for provider-backed coding chat and read-only
 file review. They do not edit files, execute commands, or download model weights.
 
@@ -26,7 +71,7 @@ vonk --version
 ```
 
 Choose one installation for the `vonk` command. Both expose the same executable
-name and share configuration. Version 0.2.0 is prepared in source; publishing to
+name and share configuration. Version 0.3.0 is prepared in source; publishing to
 npm or PyPI is a separate step and has not been performed here.
 
 ## Qwen, DeepSeek, and MiMo on Hugging Face

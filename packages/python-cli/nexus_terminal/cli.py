@@ -12,7 +12,7 @@ import tempfile
 
 from .providers import EXAMPLE_MODELS, HUGGINGFACE_MODELS, PROVIDERS, complete_byok, resolve_model
 
-VERSION = "0.2.0"
+VERSION = "0.3.0"
 DEFAULT = {"provider": "deepseek", "model": "deepseek-chat"}
 SYSTEM = (
     "You are Vonk, a practical coding assistant. Explain changes precisely; "
@@ -65,6 +65,8 @@ def save(path, data, secret=False):
 
 
 def credential(provider, keys_path):
+    if provider == "ollama":
+        return "ollama-local", "local / no API key"
     names = [f"{provider.upper()}_API_KEY"]
     if provider == "huggingface":
         names.append("HF_TOKEN")
@@ -167,8 +169,40 @@ def run(argv=None):
     )
     logout.add_argument("provider", nargs="?", choices=sorted(PROVIDERS))
     sub.add_parser("status", help="Show model and key source without exposing keys")
+    sub.add_parser("ui", help="Open the interactive Vonk workspace")
+    sub.add_parser("connect", help="Connect a provider interactively")
+    extensions = sub.add_parser("skills", help="Add, list, enable or disable skills")
+    extensions.add_argument(
+        "action", choices=["list", "add", "enable", "disable", "remove"], default="list", nargs="?"
+    )
+    extensions.add_argument("value", nargs="?")
+    extensions.add_argument("--name")
+    mcp = sub.add_parser("mcp", help="Manage and use trusted stdio MCP servers")
+    mcp.add_argument(
+        "action", choices=["list", "add", "remove", "tools", "call"], default="list", nargs="?"
+    )
+    mcp.add_argument("name", nargs="?")
+    mcp.add_argument("values", nargs="*")
+    mcp.add_argument(
+        "--yes", action="store_true", help="Authorize this configured MCP program/tool invocation"
+    )
+    chat.add_argument("--plain", action="store_true", help="Use the plain chat interface")
     args = parser.parse_args(argv)
     config, keys_path = config_paths()
+    from .ui import dashboard
+    from .workspace import extension_command
+
+    if args.command in {"skills", "mcp"}:
+        return extension_command(args, config.parent, sys.stdin.isatty())
+    if args.command in {None, "ui", "connect"} or (
+        args.command == "chat"
+        and not args.prompt
+        and not args.plain
+        and not args.provider
+        and not args.model
+        and not args.file
+    ):
+        return dashboard(sys.modules[__name__], connect=args.command == "connect")
     if args.command == "models":
         for provider in [args.provider] if args.provider else PROVIDERS:
             print(provider + ":")
@@ -217,7 +251,11 @@ def run(argv=None):
         return 0
     if not 1 <= args.max_tokens <= 4096 or not 0 < args.temperature <= 2:
         raise CLIError("Use --max-tokens 1-4096 and --temperature greater than 0 and at most 2")
-    context = file_context(args.file)
+    from .workspace import skill_context
+
+    context = "\n".join(filter(None, [file_context(args.file), skill_context(config.parent)]))
+    if not key and not args.prompt and not args.plain:
+        return dashboard(sys.modules[__name__])
     if not key:
         raise CLIError(
             f"No key for {provider}. Run 'vonk login {provider}' or set its API key variable"
@@ -261,7 +299,11 @@ def run(argv=None):
             messages[:] = messages[:1]
             print("Conversation cleared.")
         elif prompt == "/help":
-            print("/exit quit; /clear reset history; attached files are sent to your provider")
+            print("/exit quit; /clear reset; /menu workspace; attached files go to your provider")
+        elif prompt in {"/menu", "/models", "/connect", "/skills", "/mcp"}:
+            return (
+                0 if args.plain else dashboard(sys.modules[__name__], connect=prompt == "/connect")
+            )
         elif prompt:
             ask(prompt)
 

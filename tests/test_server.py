@@ -319,6 +319,20 @@ def test_byok_provider_errors_preserve_status_and_security_headers(mock_engine, 
     assert result.headers["Cache-Control"] == "no-store"
 
 
+def test_local_ollama_is_not_exposed_through_hosted_byok(mock_engine):
+    client = TestClient(create_app(mock_engine, api_key="master"))
+    result = client.post(
+        "/v1/chat/byok",
+        headers={"X-API-Key": "master", "X-Provider-Key": "test"},
+        json={
+            "provider": "ollama",
+            "model": "test",
+            "messages": [{"role": "user", "content": "hi"}],
+        },
+    )
+    assert result.status_code == 400
+
+
 def test_invalid_credentials_are_throttled(mock_engine):
     client = TestClient(create_app(mock_engine, api_key="master"))
     for _ in range(300):

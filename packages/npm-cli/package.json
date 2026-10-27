@@ -1,6 +1,6 @@
 {
   "name": "vonk",
-  "version": "0.2.0",
+  "version": "0.3.0",
   "description": "Vonk multi-provider AI coding terminal",
   "type": "module",
   "bin": {
@@ -10,10 +10,11 @@
     "node": ">=20.3"
   },
   "scripts": {
-    "test": "node --test test/*.test.js"
+    "test": "node --test"
   },
   "files": [
-    "bin/"
+    "bin/",
+    "lib/"
   ],
   "license": "MIT",
   "repository": {
