@@ -15,7 +15,7 @@ vonk --version
 Or install directly from GitHub:
 
 ```bash
-python -m pip install "git+https://github.com/UkohEmmanuel1/Nexus.git#subdirectory=packages/python-cli"
+python -m pip install "git+https://github.com/UkohEmmanuel1/Vonk.git#subdirectory=packages/python-cli"
 ```
 
 For Node.js 20.3+ users, from the repository root:

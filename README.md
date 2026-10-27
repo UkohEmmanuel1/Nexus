@@ -9,7 +9,7 @@ attaching individual text files for read-only code review.
 Python:
 
 ```bash
-pip install "git+https://github.com/UkohEmmanuel1/Nexus.git#subdirectory=packages/python-cli"
+pip install "git+https://github.com/UkohEmmanuel1/Vonk.git#subdirectory=packages/python-cli"
 vonk models
 vonk login deepseek
 vonk use deepseek deepseek-chat
@@ -19,8 +19,8 @@ vonk chat
 Node.js:
 
 ```bash
-git clone https://github.com/UkohEmmanuel1/Nexus.git
-cd Nexus/packages/npm-cli
+git clone https://github.com/UkohEmmanuel1/Vonk.git
+cd Vonk/packages/npm-cli
 npm install -g .
 vonk chat
 ```

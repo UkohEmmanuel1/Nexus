@@ -18,7 +18,7 @@
   "license": "MIT",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/UkohEmmanuel1/Nexus.git",
+    "url": "git+https://github.com/UkohEmmanuel1/Vonk.git",
     "directory": "packages/npm-cli"
   }
 }
